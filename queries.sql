@@ -10,7 +10,7 @@ CREATE TABLE personal_data (
   document_type_id INT NOT NULL REFERENCES document_type(id),
   first_name VARCHAR(100) NOT NULL,
   last_name VARCHAR(100) NOT NULL,
-  document_number VARCHAR(20) NOT NULL,
+  document_number VARCHAR(20) NOT NULL UNIQUE,
   birth_date DATE NOT NULL,
   sex VARCHAR(10) NOT NULL CHECK(sex IN('Male', 'Female', 'Other')),
   phone_number VARCHAR(30) NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE staff (
   id SERIAL PRIMARY KEY,
   personal_data_id INT NOT NULL UNIQUE REFERENCES personal_data(id),
   role_id INT NOT NULL REFERENCES roles(id),
-  auth_user INT NOT NULL UNIQUE REFERENCES auth_users(id),
+  auth_user_id INT NOT NULL UNIQUE REFERENCES auth_users(id),
   profile_image_id INT NOT NULL REFERENCES profile_images(id),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ
@@ -58,14 +58,15 @@ CREATE TABLE species(
 
 CREATE TABLE breeds(
   id SERIAL PRIMARY KEY,
-  specie_id INT NOT NULL REFERENCES species(id),
+  species_id INT NOT NULL REFERENCES species(id),
   name VARCHAR(100) NOT NULL,
   UNIQUE(species_id, name)
 );
 
 CREATE TABLE pets (
   id SERIAL PRIMARY KEY,
-  specie_id INT NOT NULL REFERENCES species(id),
+  species_id INT NOT NULL REFERENCES species(id),
+  breed_id INT REFERENCES breeds(id),
   profile_image_id INT NOT NULL REFERENCES profile_images(id),
   name VARCHAR(50) NOT NULL,
   weight NUMERIC(6,2) NOT NULL,
@@ -80,9 +81,11 @@ CREATE TABLE owners_pets(
   owner_id INT NOT NULL REFERENCES owners(id),
   pet_id INT NOT NULL REFERENCES pets(id),
   start_date DATE NOT NULL,
-  is_primary BOOLEAN NOT NULL,
+  is_primary BOOLEAN NOT NULL DEFAULT false,
   UNIQUE (owner_id, pet_id)
 );
+
+CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets(pet_id) WHERE is_primary = true;
 
 
 ## Media
@@ -90,8 +93,12 @@ CREATE TABLE owners_pets(
 CREATE TABLE profile_images (
   id SERIAL PRIMARY KEY,
   url VARCHAR(255) NOT NULL UNIQUE,
+  type VARCHAR(30) NOT NULL CHECK(type IN ('Staff', 'Pet', 'Owner')),
   is_default BOOLEAN NOT NULL
 );
+
+CREATE UNIQUE INDEX unique_default_per_type ON profile_images(type) WHERE is_default = true;
+
 
 ## Appointments
 
@@ -103,6 +110,7 @@ CREATE TABLE appointments (
   appointment_status_id INT NOT NULL REFERENCES appointment_status(id),
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ NOT NULL,
+  CHECK (end_time > start_time),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ
@@ -166,7 +174,7 @@ CREATE TABLE form_messages(
   form_contact_info_id INT NOT NULL REFERENCES form_contact_info(id),
   assigned_staff_id INT NOT NULL REFERENCES staff(id),
   content TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE form_message_status(
