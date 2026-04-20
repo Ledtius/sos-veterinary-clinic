@@ -19,6 +19,7 @@ CREATE TABLE personal_data (
     address VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
+
     CONSTRAINT pk_personal_data PRIMARY KEY (id),
     CONSTRAINT fk_personal_data_document_type FOREIGN KEY (document_type_id) REFERENCES document_type (id),
     CONSTRAINT uq_personal_data_document_number UNIQUE (document_number),
@@ -36,8 +37,9 @@ CREATE TABLE owners (
     profile_image_id INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
+
     CONSTRAINT pk_owners PRIMARY KEY (id),
-    CONSTRAINT fk_uq_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
+    CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
     CONSTRAINT uq_owner_personal_data UNIQUE (personal_data_id)
 );
 
@@ -49,60 +51,83 @@ CREATE TABLE staff (
     profile_image_id INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
+    
     CONSTRAINT pk_staff PRIMARY KEY (id),
     CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
-    CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
     CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id),
     CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id),
-    CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id),
-    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id)
+    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id), CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
+    CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
 );
 
 CREATE TABLE auth_users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL
+    id SERIAL,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+
+    CONSTRAINT pk_auth_users PRIMARY KEY (id),
+    CONSTRAINT uq_auth_users_email UNIQUE (email)
 );
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
     name VARCHAR(150) NOT NULL UNIQUE
+    CONSTRAINT pk_roles PRIMARY KEY(id),
+    CONSTRAINT uq_roles_name UNIQUE(name)
 );
 
 ## Pets
 
 CREATE TABLE species(
-  id SERIAL PRIMARY KEY,
-  name VARCHAR(100) NOT NULL UNIQUE
+  id SERIAL,
+  name VARCHAR(100) NOT NULL,
+
+  CONSTRAINT pk_species PRIMARY KEY(id),
+  CONSTRAINT uq_species_name UNIQUE(name)
 );
 
 CREATE TABLE breeds (
-    id SERIAL PRIMARY KEY,
-    species_id INT NOT NULL REFERENCES species (id),
+    id SERIAL,
+    species_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
-    UNIQUE (species_id, name)
+    UNIQUE (species_id, name),
+
+    CONSTRAINT pk_breeds PRIMARY KEY(id),
+    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species(id),
+    CONSTRAINT uq_breeds_species_name UNIQUE(species_id, name)
 );
 
 CREATE TABLE pets (
-    id SERIAL PRIMARY KEY,
-    species_id INT NOT NULL REFERENCES species (id),
-    breed_id INT REFERENCES breeds (id),
-    profile_image_id INT NOT NULL REFERENCES profile_images (id),
+    id SERIAL,
+    species_id INT NOT NULL,
+    breed_id INT,
+    profile_image_id INT NOT NULL,
     name VARCHAR(50) NOT NULL,
     weight NUMERIC(6, 2) NOT NULL,
-    sex VARCHAR(10) NOT NULL CHECK (sex IN ('Male', 'Female')),
+    sex VARCHAR(10) NOT NULL,
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+
+    CONSTRAINT pk_pets PRIMARY KEY(id),
+    CONSTRAINT fk_pets_species FOREIGN KEY(species_id) REFERENCES species(id),
+    CONSTRAINT fk_pets_breed FOREIGN KEY(breed_id) REFERENCES breeds(id),
+    CONSTRAINT fk_pets_profile_image FOREIGN KEY(profile_image_id) REFERENCES profile_images(id),
+    CONSTRAINT chk_pets_sex CHECK(sex IN ('Male', 'Female', 'Other'))
 );
 
 CREATE TABLE owners_pets (
-    id SERIAL PRIMARY KEY,
-    owner_id INT NOT NULL REFERENCES owners (id),
-    pet_id INT NOT NULL REFERENCES pets (id),
+    id SERIAL,
+    owner_id INT NOT NULL,
+    pet_id INT NOT NULL,
     start_date DATE NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
-    UNIQUE (owner_id, pet_id)
+    
+    CONSTRAINT pk_owners_pets PRIMARY KEY(id),
+    CONSTRAINT fk_owners_pets_owner FOREIGN KEY(owner_id) REFERENCES owners(id),
+    CONSTRAINT fk_owners_pets_pet FOREIGN KEY(pet_id) REFERENCES pets(id),
+    CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id),
+
 );
 
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
