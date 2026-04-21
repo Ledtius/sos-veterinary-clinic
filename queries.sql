@@ -1,11 +1,82 @@
-## Core People
-
-CREATE TABLE document_type(
-  id SERIAL,
-  name VARCHAR(100) NOT NULL,
-  CONSTRAINT pk_document_type PRIMARY KEY (id),
-  CONSTRAINT uq_document_type_name UNIQUE (name)
+-- Base
+CREATE TABLE document_type (
+    id SERIAL,
+    name VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_document_type PRIMARY KEY (id),
+    CONSTRAINT uq_document_type_name UNIQUE (name)
 );
+
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL UNIQUE CONSTRAINT pk_roles PRIMARY KEY (id),
+    CONSTRAINT uq_roles_name UNIQUE (name)
+);
+
+CREATE TABLE auth_users (
+    id SERIAL,
+    email VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    CONSTRAINT pk_auth_users PRIMARY KEY (id),
+    CONSTRAINT uq_auth_users_email UNIQUE (email)
+);
+
+CREATE TABLE species (
+    id SERIAL,
+    name VARCHAR(100) NOT NULL,
+    CONSTRAINT pk_species PRIMARY KEY (id),
+    CONSTRAINT uq_species_name UNIQUE (name)
+);
+
+CREATE TABLE categories (
+    id SERIAL,
+    name VARCHAR(150) NOT NULL,
+    CONSTRAINT pk_categories PRIMARY KEY (id),
+    CONSTRAINT uq_categories_name_ca UNIQUE (name)
+);
+
+CREATE TABLE profile_images (
+    id SERIAL,
+    url VARCHAR(255) NOT NULL,
+    type VARCHAR(30) NOT NULL,
+    is_default BOOLEAN NOT NULL,
+    CONSTRAINT pk_profile_images PRIMARY KEY (id),
+    CONSTRAINT uq_profile_images_url UNIQUE (url),
+    CONSTRAINT chk_profile_images_type CHECK (
+        type IN ('Staff', 'Pet', 'Owner')
+    )
+);
+
+CREATE UNIQUE INDEX unique_default_per_type ON profile_images(type) WHERE is_default = true;
+
+CREATE TABLE appointment_status (
+    id SERIAL,
+    name VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_appointment_status PRIMARY KEY (id),
+    CONSTRAINT chk_appointment_status_name CHECK (
+        name IN (
+            'Pending',
+            'In Process',
+            'Completed'
+        )
+    ),
+    CONSTRAINT uq_appointment_status_name UNIQUE (name)
+);
+
+CREATE TABLE form_message_status (
+    id SERIAL,
+    name VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_form_message_status PRIMARY KEY (id),
+    CONSTRAINT chk_form_message_status_name CHECK (
+        name IN (
+            'Unread',
+            'Viewed',
+            'Responded'
+        )
+    ),
+    CONSTRAINT uq_form_message_status_name UNIQUE (name)
+);
+
+-- One dependency
 
 CREATE TABLE personal_data (
     id SERIAL,
@@ -29,6 +100,35 @@ CREATE TABLE personal_data (
         document_number
     )
 );
+
+CREATE TABLE breeds (
+    id SERIAL,
+    species_id INT NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    UNIQUE (species_id, name),
+    CONSTRAINT pk_breeds PRIMARY KEY (id),
+    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species (id),
+    CONSTRAINT uq_breeds_species_name UNIQUE (species_id, name)
+);
+
+CREATE TABLE services (
+    id SERIAL,
+    category_id INT NOT NULL,
+    name VARCHAR(150) NOT NULL,
+    CONSTRAINT pk_services PRIMARY KEY (id),
+    CONSTRAINT fk_services_category FOREIGN KEY (category_id) REFERENCES categories (id),
+    CONSTRAINT uq_services_category_name UNIQUE (category_id, name)
+);
+
+CREATE TABLE form_contact_info (
+    id SERIAL,
+    name VARCHAR(150) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    CONSTRAINT pk_form_contact_info PRIMARY KEY (id)
+);
+
+-- Core entities
 
 CREATE TABLE owners (
     id SERIAL,
@@ -58,40 +158,6 @@ CREATE TABLE staff (
     CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
 );
 
-CREATE TABLE auth_users (
-    id SERIAL,
-    email VARCHAR(255) NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    CONSTRAINT pk_auth_users PRIMARY KEY (id),
-    CONSTRAINT uq_auth_users_email UNIQUE (email)
-);
-
-CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE CONSTRAINT pk_roles PRIMARY KEY (id),
-    CONSTRAINT uq_roles_name UNIQUE (name)
-);
-
-## Pets
-
-CREATE TABLE species(
-  id SERIAL,
-  name VARCHAR(100) NOT NULL,
-
-  CONSTRAINT pk_species PRIMARY KEY(id),
-  CONSTRAINT uq_species_name UNIQUE(name)
-);
-
-CREATE TABLE breeds (
-    id SERIAL,
-    species_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    UNIQUE (species_id, name),
-    CONSTRAINT pk_breeds PRIMARY KEY (id),
-    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species (id),
-    CONSTRAINT uq_breeds_species_name UNIQUE (species_id, name)
-);
-
 CREATE TABLE pets (
     id SERIAL,
     species_id INT NOT NULL,
@@ -112,6 +178,19 @@ CREATE TABLE pets (
     )
 );
 
+-- Notifications Base
+
+CREATE TABLE notifications (
+    id SERIAL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_read BOOLEAN DEFAULT false,
+    read_at TIMESTAMPTZ,
+    CONSTRAINT pk_notifications PRIMARY KEY (id)
+);
+
+-- M:N tables
+
 CREATE TABLE owners_pets (
     id SERIAL,
     owner_id INT NOT NULL,
@@ -124,28 +203,21 @@ CREATE TABLE owners_pets (
     CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id)
 );
 
-## INDEX
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
 WHERE
     is_primary = true;
 
-## Media
-
-CREATE TABLE profile_images (
-  id SERIAL,
-  url VARCHAR(255) NOT NULL,
-  type VARCHAR(30) NOT NULL,
-  is_default BOOLEAN NOT NULL,
-
-  CONSTRAINT pk_profile_images PRIMARY KEY(id),
-  CONSTRAINT uq_profile_images_url UNIQUE(url),
-  CONSTRAINT chk_profile_images_type CHECK(type IN ('Staff', 'Pet', 'Owner'))
+CREATE TABLE notifications_staff (
+    id SERIAL,
+    notification_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
+    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
+    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
+    CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
 );
 
-## INDEX
-CREATE UNIQUE INDEX unique_default_per_type ON profile_images(type) WHERE is_default = true;
-
-## Appointments
+-- Business logic
 
 CREATE TABLE appointments (
   id SERIAL,
@@ -167,20 +239,6 @@ CREATE TABLE appointments (
   CONSTRAINT chk_appointments_end_time_gt _start_time CHECK(end_time > start_time)
 );
 
-CREATE TABLE appointment_status (
-    id SERIAL,
-    name VARCHAR(20) NOT NULL,
-    CONSTRAINT pk_appointment_status PRIMARY KEY (id),
-    CONSTRAINT chk_appointment_status_name CHECK (
-        name IN (
-            'Pending',
-            'In Process',
-            'Completed'
-        )
-    ),
-    CONSTRAINT uq_appointment_status_name UNIQUE (name)
-);
-
 CREATE TABLE medical_records (
     id SERIAL,
     appointment_id INT NOT NULL,
@@ -196,90 +254,7 @@ CREATE TABLE medical_records (
     CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id)
 );
 
-## Services
-CREATE TABLE services( 
-  id SERIAL, 
-  category_id INT NOT NULL,
-  name VARCHAR(150) NOT NULL,
-
-  CONSTRAINT pk_services PRIMARY KEY(id),
-  CONSTRAINT fk_services_category FOREIGN KEY(category_id) REFERENCES categories(id),
-  CONSTRAINT uq_services_category_name UNIQUE(category_id, name)
-
-
-);
-
-CREATE TABLE categories (
-    id SERIAL,
-    name VARCHAR(150) NOT NULL,
-    CONSTRAINT pk_categories PRIMARY KEY (id),
-    CONSTRAINT uq_categories_name_ca UNIQUE (name)
-);
-
-## Notifications
-
-CREATE TABLE notifications(
-  id SERIAL,
-  message TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT pk_notifications PRIMARY KEY(id)
-);
-
-
-CREATE TABLE notifications_staff (
-    id SERIAL ,
-    notification_id INT NOT NULL,
-    staff_id INT NOT NULL,
-    UNIQUE (notification_id, staff_id),
-CREATE TABLE notifications(
-  id SERIAL,
-  message TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT pk_notifications PRIMARY KEY(id)
-);
-
-CREATE TABLE notifications_staff (
-    id SERIAL,
-    notification_id INT NOT NULL REFERENCES notifications (id),
-    staff_id INT NOT NULL REFERENCES staff (id),
-    UNIQUE (notification_id, staff_id),
-    CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
-    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
-    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
-    CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
-);
-
-CREATE TABLE notifications (
-    id SERIAL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    is_read BOOLEAN DEFAULT false,
-    read_at TIMESTAMPTZ,
-    CONSTRAINT pk_notifications PRIMARY KEY (id)
-);
-
-CREATE TABLE notifications_staff (
-    id SERIAL,
-    notification_id INT NOT NULL,
-    staff_id INT NOT NULL,
-    CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
-    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
-    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
-    CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
-);
-
-## Contact/Forms
-
-CREATE TABLE form_contact_info(
-  id SERIAL,
-  name VARCHAR(150) NOT NULL,
-  email VARCHAR(255) NOT NULL,
-  phone VARCHAR(30) NOT NULL,
-
-  CONSTRAINT pk_form_contact_info PRIMARY KEY(id)
-);
+-- Forms
 
 CREATE TABLE form_messages (
     id SERIAL,
@@ -292,18 +267,4 @@ CREATE TABLE form_messages (
     CONSTRAINT fk_form_messages_form_message_status FOREIGN KEY (form_message_status_id) REFERENCES form_message_status (id),
     CONSTRAINT fk_form_messages_form_contact_info FOREIGN KEY (form_contact_info_id) REFERENCES form_contact_info (id),
     CONSTRAINT fk_form_messages_assigned_staff FOREIGN KEY (assigned_staff_id) REFERENCES staff (id)
-);
-
-CREATE TABLE form_message_status (
-    id SERIAL,
-    name VARCHAR(20) NOT NULL,
-    CONSTRAINT pk_form_message_status PRIMARY KEY (id),
-    CONSTRAINT chk_form_message_status_name CHECK (
-        name IN (
-            'Unread',
-            'Viewed',
-            'Responded'
-        )
-    ),
-    CONSTRAINT uq_form_message_status_name UNIQUE (name)
 );
