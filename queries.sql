@@ -19,7 +19,6 @@ CREATE TABLE personal_data (
     address VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
-
     CONSTRAINT pk_personal_data PRIMARY KEY (id),
     CONSTRAINT fk_personal_data_document_type FOREIGN KEY (document_type_id) REFERENCES document_type (id),
     CONSTRAINT uq_personal_data_document_number UNIQUE (document_number),
@@ -37,7 +36,6 @@ CREATE TABLE owners (
     profile_image_id INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
-
     CONSTRAINT pk_owners PRIMARY KEY (id),
     CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
     CONSTRAINT uq_owner_personal_data UNIQUE (personal_data_id)
@@ -51,12 +49,12 @@ CREATE TABLE staff (
     profile_image_id INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
-    
     CONSTRAINT pk_staff PRIMARY KEY (id),
     CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
     CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id),
     CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id),
-    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id), CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
+    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id),
+    CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
     CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
 );
 
@@ -64,16 +62,14 @@ CREATE TABLE auth_users (
     id SERIAL,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-
     CONSTRAINT pk_auth_users PRIMARY KEY (id),
     CONSTRAINT uq_auth_users_email UNIQUE (email)
 );
 
 CREATE TABLE roles (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE
-    CONSTRAINT pk_roles PRIMARY KEY(id),
-    CONSTRAINT uq_roles_name UNIQUE(name)
+    name VARCHAR(150) NOT NULL UNIQUE CONSTRAINT pk_roles PRIMARY KEY (id),
+    CONSTRAINT uq_roles_name UNIQUE (name)
 );
 
 ## Pets
@@ -91,16 +87,15 @@ CREATE TABLE breeds (
     species_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     UNIQUE (species_id, name),
-
-    CONSTRAINT pk_breeds PRIMARY KEY(id),
-    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species(id),
-    CONSTRAINT uq_breeds_species_name UNIQUE(species_id, name)
+    CONSTRAINT pk_breeds PRIMARY KEY (id),
+    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species (id),
+    CONSTRAINT uq_breeds_species_name UNIQUE (species_id, name)
 );
 
 CREATE TABLE pets (
     id SERIAL,
     species_id INT NOT NULL,
-    breed_id INT,
+    breed_id INT NOT NULL,
     profile_image_id INT NOT NULL,
     name VARCHAR(50) NOT NULL,
     weight NUMERIC(6, 2) NOT NULL,
@@ -108,12 +103,13 @@ CREATE TABLE pets (
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
-
-    CONSTRAINT pk_pets PRIMARY KEY(id),
-    CONSTRAINT fk_pets_species FOREIGN KEY(species_id) REFERENCES species(id),
-    CONSTRAINT fk_pets_breed FOREIGN KEY(breed_id) REFERENCES breeds(id),
-    CONSTRAINT fk_pets_profile_image FOREIGN KEY(profile_image_id) REFERENCES profile_images(id),
-    CONSTRAINT chk_pets_sex CHECK(sex IN ('Male', 'Female', 'Other'))
+    CONSTRAINT pk_pets PRIMARY KEY (id),
+    CONSTRAINT fk_pets_species FOREIGN KEY (species_id) REFERENCES species (id),
+    CONSTRAINT fk_pets_breed FOREIGN KEY (breed_id) REFERENCES breeds (id),
+    CONSTRAINT fk_pets_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id),
+    CONSTRAINT chk_pets_sex CHECK (
+        sex IN ('Male', 'Female', 'Other')
+    )
 );
 
 CREATE TABLE owners_pets (
@@ -122,14 +118,13 @@ CREATE TABLE owners_pets (
     pet_id INT NOT NULL,
     start_date DATE NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
-    
-    CONSTRAINT pk_owners_pets PRIMARY KEY(id),
-    CONSTRAINT fk_owners_pets_owner FOREIGN KEY(owner_id) REFERENCES owners(id),
-    CONSTRAINT fk_owners_pets_pet FOREIGN KEY(pet_id) REFERENCES pets(id),
-    CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id),
-
+    CONSTRAINT pk_owners_pets PRIMARY KEY (id),
+    CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id),
+    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id),
+    CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id)
 );
 
+## INDEX
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
 WHERE
     is_primary = true;
@@ -137,104 +132,178 @@ WHERE
 ## Media
 
 CREATE TABLE profile_images (
-  id SERIAL PRIMARY KEY,
-  url VARCHAR(255) NOT NULL UNIQUE,
-  type VARCHAR(30) NOT NULL CHECK(type IN ('Staff', 'Pet', 'Owner')),
-  is_default BOOLEAN NOT NULL
+  id SERIAL,
+  url VARCHAR(255) NOT NULL,
+  type VARCHAR(30) NOT NULL,
+  is_default BOOLEAN NOT NULL,
+
+  CONSTRAINT pk_profile_images PRIMARY KEY(id),
+  CONSTRAINT uq_profile_images_url UNIQUE(url),
+  CONSTRAINT chk_profile_images_type CHECK(type IN ('Staff', 'Pet', 'Owner'))
 );
 
+## INDEX
 CREATE UNIQUE INDEX unique_default_per_type ON profile_images(type) WHERE is_default = true;
 
 ## Appointments
 
 CREATE TABLE appointments (
-  id SERIAL PRIMARY KEY,
-  service_id INT NOT NULL REFERENCES services(id),
-  staff_id INT NOT NULL REFERENCES staff(id),
-  owner_pet_id INT NOT NULL REFERENCES owners_pets(id),
-  appointment_status_id INT NOT NULL REFERENCES appointment_status(id),
+  id SERIAL,
+  service_id INT NOT NULL,
+  staff_id INT NOT NULL,
+  owner_pet_id INT NOT NULL,
+  appointment_status_id INT NOT NULL,
   start_time TIMESTAMPTZ NOT NULL,
   end_time TIMESTAMPTZ NOT NULL,
-  CHECK (end_time > start_time),
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ
+  updated_at TIMESTAMPTZ,
+
+  CONSTRAINT pk_appointments PRIMARY KEY(id),
+  CONSTRAINT fk_appointments_services FOREIGN KEY(service_id) REFERENCES services(id),
+  CONSTRAINT fk_appointments_staff FOREIGN KEY(staff_id) REFERENCES staff(id),
+  CONSTRAINT fk_appointments_owner_pet FOREIGN KEY(owner_pet_id) REFERENCES owners_pets(id),
+  CONSTRAINT fk_appointments_appointment_status FOREIGN KEY(appointment_status_id) REFERENCES appointment_status(id),
+  CONSTRAINT chk_appointments_end_time_gt _start_time CHECK(end_time > start_time)
 );
 
 CREATE TABLE appointment_status (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(20) NOT NULL CHECK (
+    id SERIAL,
+    name VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_appointment_status PRIMARY KEY (id),
+    CONSTRAINT chk_appointment_status_name CHECK (
         name IN (
             'Pending',
-            'In Progress',
+            'In Process',
             'Completed'
         )
-    ) UNIQUE
+    ),
+    CONSTRAINT uq_appointment_status_name UNIQUE (name)
 );
 
 CREATE TABLE medical_records (
-    id SERIAL PRIMARY KEY,
-    appointment_id INT NOT NULL REFERENCES appointments (id) UNIQUE,
-    staff_id INT NOT NULL REFERENCES staff (id),
+    id SERIAL,
+    appointment_id INT NOT NULL,
+    staff_id INT NOT NULL,
     diagnosis TEXT NOT NULL,
     treatment TEXT,
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ
+    updated_at TIMESTAMPTZ,
+    CONSTRAINT pk_medical_records PRIMARY KEY (id),
+    CONSTRAINT fk_medical_records_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id),
+    CONSTRAINT uq_medical_records_appointment UNIQUE (appointment_id),
+    CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id)
 );
 
 ## Services
-CREATE TABLE services(
-  id SERIAL PRIMARY KEY, 
-  category_id INT NOT NULL REFERENCES categories(id),
-  name VARCHAR(150) NOT NULL UNIQUE
+CREATE TABLE services( 
+  id SERIAL, 
+  category_id INT NOT NULL,
+  name VARCHAR(150) NOT NULL,
+
+  CONSTRAINT pk_services PRIMARY KEY(id),
+  CONSTRAINT fk_services_category FOREIGN KEY(category_id) REFERENCES categories(id),
+  CONSTRAINT uq_services_category_name UNIQUE(category_id, name)
+
+
 );
 
 CREATE TABLE categories (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE
+    id SERIAL,
+    name VARCHAR(150) NOT NULL,
+    CONSTRAINT pk_categories PRIMARY KEY (id),
+    CONSTRAINT uq_categories_name_ca UNIQUE (name)
 );
 
 ## Notifications
 
 CREATE TABLE notifications(
-  id SERIAL  PRIMARY KEY,
+  id SERIAL,
   message TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT pk_notifications PRIMARY KEY(id)
+);
+
+
+CREATE TABLE notifications_staff (
+    id SERIAL ,
+    notification_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    UNIQUE (notification_id, staff_id),
+CREATE TABLE notifications(
+  id SERIAL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT pk_notifications PRIMARY KEY(id)
 );
 
 CREATE TABLE notifications_staff (
-    id SERIAL PRIMARY KEY,
+    id SERIAL,
     notification_id INT NOT NULL REFERENCES notifications (id),
     staff_id INT NOT NULL REFERENCES staff (id),
-    UNIQUE (notification_id, staff_id)
+    UNIQUE (notification_id, staff_id),
+    CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
+    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
+    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
+    CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
+);
+
+CREATE TABLE notifications (
+    id SERIAL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_read BOOLEAN DEFAULT false,
+    read_at TIMESTAMPTZ,
+    CONSTRAINT pk_notifications PRIMARY KEY (id)
+);
+
+CREATE TABLE notifications_staff (
+    id SERIAL,
+    notification_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
+    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
+    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
+    CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
 );
 
 ## Contact/Forms
 
 CREATE TABLE form_contact_info(
-  id SERIAL PRIMARY KEY,
+  id SERIAL,
   name VARCHAR(150) NOT NULL,
   email VARCHAR(255) NOT NULL,
-  phone VARCHAR(30) NOT NULL
+  phone VARCHAR(30) NOT NULL,
+
+  CONSTRAINT pk_form_contact_info PRIMARY KEY(id)
 );
 
 CREATE TABLE form_messages (
-    id SERIAL PRIMARY KEY,
-    form_message_status_id INT NOT NULL REFERENCES form_message_status (id),
-    form_contact_info_id INT NOT NULL REFERENCES form_contact_info (id),
-    assigned_staff_id INT NOT NULL REFERENCES staff (id),
+    id SERIAL,
+    form_message_status_id INT NOT NULL,
+    form_contact_info_id INT NOT NULL,
+    assigned_staff_id INT,
     content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT pk_form_messages PRIMARY KEY (id),
+    CONSTRAINT fk_form_messages_form_message_status FOREIGN KEY (form_message_status_id) REFERENCES form_message_status (id),
+    CONSTRAINT fk_form_messages_form_contact_info FOREIGN KEY (form_contact_info_id) REFERENCES form_contact_info (id),
+    CONSTRAINT fk_form_messages_assigned_staff FOREIGN KEY (assigned_staff_id) REFERENCES staff (id)
 );
 
 CREATE TABLE form_message_status (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(20) NOT NULL CHECK (
+    id SERIAL,
+    name VARCHAR(20) NOT NULL,
+    CONSTRAINT pk_form_message_status PRIMARY KEY (id),
+    CONSTRAINT chk_form_message_status_name CHECK (
         name IN (
             'Unread',
             'Viewed',
             'Responded'
         )
-    ) UNIQUE
+    ),
+    CONSTRAINT uq_form_message_status_name UNIQUE (name)
 );
