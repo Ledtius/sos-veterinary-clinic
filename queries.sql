@@ -141,6 +141,9 @@ CREATE TABLE owners (
     CONSTRAINT uq_owner_personal_data UNIQUE (personal_data_id)
 );
 
+
+ALTER TABLE owners COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+
 CREATE TABLE staff (
     id SERIAL,
     personal_data_id INT NOT NULL,
@@ -157,6 +160,8 @@ CREATE TABLE staff (
     CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
     CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
 );
+
+ALTER TABLE staff COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE pets (
     id SERIAL,
@@ -177,6 +182,8 @@ CREATE TABLE pets (
         sex IN ('Male', 'Female', 'Other')
     )
 );
+
+ALTER TABLE pets COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 -- Notifications Base
 
@@ -220,23 +227,22 @@ CREATE TABLE notifications_staff (
 -- Business logic
 
 CREATE TABLE appointments (
-  id SERIAL,
-  service_id INT NOT NULL,
-  staff_id INT NOT NULL,
-  owner_pet_id INT NOT NULL,
-  appointment_status_id INT NOT NULL,
-  start_time TIMESTAMPTZ NOT NULL,
-  end_time TIMESTAMPTZ NOT NULL,
-  notes TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ,
-
-  CONSTRAINT pk_appointments PRIMARY KEY(id),
-  CONSTRAINT fk_appointments_services FOREIGN KEY(service_id) REFERENCES services(id),
-  CONSTRAINT fk_appointments_staff FOREIGN KEY(staff_id) REFERENCES staff(id),
-  CONSTRAINT fk_appointments_owner_pet FOREIGN KEY(owner_pet_id) REFERENCES owners_pets(id),
-  CONSTRAINT fk_appointments_appointment_status FOREIGN KEY(appointment_status_id) REFERENCES appointment_status(id),
-  CONSTRAINT chk_appointments_end_time_gt _start_time CHECK(end_time > start_time)
+    id SERIAL,
+    service_id INT NOT NULL,
+    staff_id INT NOT NULL,
+    owner_pet_id INT NOT NULL,
+    appointment_status_id INT NOT NULL,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ,
+    CONSTRAINT pk_appointments PRIMARY KEY (id),
+    CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id),
+    CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
+    CONSTRAINT fk_appointments_owner_pet FOREIGN KEY (owner_pet_id) REFERENCES owners_pets (id),
+    CONSTRAINT fk_appointments_appointment_status FOREIGN KEY (appointment_status_id) REFERENCES appointment_status (id),
+    CONSTRAINT chk_appointments_end_time_gt _start_time CHECK (end_time > start_time)
 );
 
 CREATE TABLE medical_records (
