@@ -7,8 +7,9 @@ CREATE TABLE document_type (
 );
 
 CREATE TABLE roles (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(150) NOT NULL UNIQUE CONSTRAINT pk_roles PRIMARY KEY (id),
+    id SERIAL,
+    name VARCHAR(150) NOT NULL,
+    CONSTRAINT pk_roles PRIMARY KEY (id),
     CONSTRAINT uq_roles_name UNIQUE (name)
 );
 
@@ -31,7 +32,7 @@ CREATE TABLE categories (
     id SERIAL,
     name VARCHAR(150) NOT NULL,
     CONSTRAINT pk_categories PRIMARY KEY (id),
-    CONSTRAINT uq_categories_name_ca UNIQUE (name)
+    CONSTRAINT uq_categories_name UNIQUE (name)
 );
 
 CREATE TABLE profile_images (
@@ -91,11 +92,11 @@ CREATE TABLE personal_data (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_personal_data PRIMARY KEY (id),
-    CONSTRAINT fk_personal_data_document_type FOREIGN KEY (document_type_id) REFERENCES document_type (id),
-    CONSTRAINT uq_personal_data_document_number UNIQUE (document_number),
+    CONSTRAINT fk_personal_data_document_type FOREIGN KEY (document_type_id) REFERENCES document_type (id) ON DELETE RESTRICT,
     CONSTRAINT chk_personal_data_sex CHECK (
         sex IN ('Male', 'Female', 'Other')
-    ) CONSTRAINT uq_personal_data_document UNIQUE (
+    ),
+    CONSTRAINT uq_personal_data_document UNIQUE (
         document_type_id,
         document_number
     )
@@ -105,9 +106,8 @@ CREATE TABLE breeds (
     id SERIAL,
     species_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
-    UNIQUE (species_id, name),
     CONSTRAINT pk_breeds PRIMARY KEY (id),
-    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species (id),
+    CONSTRAINT fk_breeds_species FOREIGN KEY (species_id) REFERENCES species (id) ON DELETE RESTRICT,
     CONSTRAINT uq_breeds_species_name UNIQUE (species_id, name)
 );
 
@@ -116,7 +116,7 @@ CREATE TABLE services (
     category_id INT NOT NULL,
     name VARCHAR(150) NOT NULL,
     CONSTRAINT pk_services PRIMARY KEY (id),
-    CONSTRAINT fk_services_category FOREIGN KEY (category_id) REFERENCES categories (id),
+    CONSTRAINT fk_services_category FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE RESTRICT,
     CONSTRAINT uq_services_category_name UNIQUE (category_id, name)
 );
 
@@ -133,41 +133,42 @@ CREATE TABLE form_contact_info (
 CREATE TABLE owners (
     id SERIAL,
     personal_data_id INT NOT NULL,
-    profile_image_id INT NOT NULL,
+    profile_image_id INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_owners PRIMARY KEY (id),
-    CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
+    CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_owners_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
     CONSTRAINT uq_owner_personal_data UNIQUE (personal_data_id)
 );
 
-
-ALTER TABLE owners COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE owners
+ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE staff (
     id SERIAL,
     personal_data_id INT NOT NULL,
     role_id INT NOT NULL,
     auth_user_id INT NOT NULL,
-    profile_image_id INT NOT NULL,
+    profile_image_id INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_staff PRIMARY KEY (id),
-    CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id),
-    CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id),
-    CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id),
-    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id),
+    CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
     CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
     CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
 );
 
-ALTER TABLE staff COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE staff ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE pets (
     id SERIAL,
     species_id INT NOT NULL,
-    breed_id INT NOT NULL,
-    profile_image_id INT NOT NULL,
+    breed_id INT NULL,
+    profile_image_id INT,
     name VARCHAR(50) NOT NULL,
     weight NUMERIC(6, 2) NOT NULL,
     sex VARCHAR(10) NOT NULL,
@@ -175,15 +176,15 @@ CREATE TABLE pets (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_pets PRIMARY KEY (id),
-    CONSTRAINT fk_pets_species FOREIGN KEY (species_id) REFERENCES species (id),
-    CONSTRAINT fk_pets_breed FOREIGN KEY (breed_id) REFERENCES breeds (id),
-    CONSTRAINT fk_pets_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id),
+    CONSTRAINT fk_pets_species FOREIGN KEY (species_id) REFERENCES species (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_pets_breed FOREIGN KEY (breed_id) REFERENCES breeds (id) ON DELETE SET NULL,
+    CONSTRAINT fk_pets_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
     CONSTRAINT chk_pets_sex CHECK (
         sex IN ('Male', 'Female', 'Other')
     )
 );
 
-ALTER TABLE pets COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE pets ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 -- Notifications Base
 
@@ -205,8 +206,8 @@ CREATE TABLE owners_pets (
     start_date DATE NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
     CONSTRAINT pk_owners_pets PRIMARY KEY (id),
-    CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id),
-    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id),
+    CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id) ON DELETE CASCADE,
+    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE,
     CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id)
 );
 
@@ -219,8 +220,8 @@ CREATE TABLE notifications_staff (
     notification_id INT NOT NULL,
     staff_id INT NOT NULL,
     CONSTRAINT pk_notifications_staff PRIMARY KEY (id),
-    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id),
-    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
+    CONSTRAINT fk_notifications_staff_notification FOREIGN KEY (notification_id) REFERENCES notifications (id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifications_staff_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE CASCADE,
     CONSTRAINT uq_notifications_staff_notification_staff UNIQUE (notification_id, staff_id)
 );
 
@@ -238,11 +239,11 @@ CREATE TABLE appointments (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_appointments PRIMARY KEY (id),
-    CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id),
-    CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id),
-    CONSTRAINT fk_appointments_owner_pet FOREIGN KEY (owner_pet_id) REFERENCES owners_pets (id),
-    CONSTRAINT fk_appointments_appointment_status FOREIGN KEY (appointment_status_id) REFERENCES appointment_status (id),
-    CONSTRAINT chk_appointments_end_time_gt _start_time CHECK (end_time > start_time)
+    CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_appointments_owner_pet FOREIGN KEY (owner_pet_id) REFERENCES owners_pets (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_appointments_appointment_status FOREIGN KEY (appointment_status_id) REFERENCES appointment_status (id) ON DELETE RESTRICT,
+    CONSTRAINT chk_appointments_end_time_gt_start_time CHECK (end_time > start_time)
 );
 
 CREATE TABLE medical_records (
@@ -255,9 +256,19 @@ CREATE TABLE medical_records (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_medical_records PRIMARY KEY (id),
-    CONSTRAINT fk_medical_records_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id),
+    CONSTRAINT fk_medical_records_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE CASCADE,
     CONSTRAINT uq_medical_records_appointment UNIQUE (appointment_id),
-    CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id)
+    CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT
+);
+
+CREATE TABLE medical_record_files (
+    id SERIAL,
+    medical_record_id INT NOT NULL,
+    file_url TEXT NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    uploaded_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT pk_medical_record_files PRIMARY KEY (id),
+    CONSTRAINT fk_medical_record_files_medical_record FOREIGN KEY (medical_record_id) REFERENCES medical_records (id) ON DELETE CASCADE
 );
 
 -- Forms
@@ -270,7 +281,7 @@ CREATE TABLE form_messages (
     content TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT pk_form_messages PRIMARY KEY (id),
-    CONSTRAINT fk_form_messages_form_message_status FOREIGN KEY (form_message_status_id) REFERENCES form_message_status (id),
-    CONSTRAINT fk_form_messages_form_contact_info FOREIGN KEY (form_contact_info_id) REFERENCES form_contact_info (id),
-    CONSTRAINT fk_form_messages_assigned_staff FOREIGN KEY (assigned_staff_id) REFERENCES staff (id)
+    CONSTRAINT fk_form_messages_form_message_status FOREIGN KEY (form_message_status_id) REFERENCES form_message_status (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_form_messages_form_contact_info FOREIGN KEY (form_contact_info_id) REFERENCES form_contact_info (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_form_messages_assigned_staff FOREIGN KEY (assigned_staff_id) REFERENCES staff (id) ON DELETE SET NULL
 );
