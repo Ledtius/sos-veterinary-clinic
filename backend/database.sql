@@ -149,14 +149,14 @@ CREATE TABLE staff (
     id SERIAL,
     personal_data_id INT NOT NULL,
     role_id INT NOT NULL,
-    auth_user_id INT NOT NULL,
+    auth_user_id INT,
     profile_image_id INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
     CONSTRAINT pk_staff PRIMARY KEY (id),
     CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
     CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id) ON DELETE SET NULL,
     CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
     CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
     CONSTRAINT uq_staff_auth_user UNIQUE (auth_user_id)
@@ -186,6 +186,10 @@ CREATE TABLE pets (
 
 ALTER TABLE pets ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
+CREATE INDEX idx_pets_breed_id ON pets (breed_id);
+
+CREATE INDEX idx_pets_species_id ON pets (species_id);
+
 -- Notifications Base
 
 CREATE TABLE notifications (
@@ -214,6 +218,10 @@ CREATE TABLE owners_pets (
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
 WHERE
     is_primary = true;
+
+CREATE INDEX idx_owners_pets_owner_id ON owners_pets (owner_id);
+
+CREATE INDEX idx_owners_pets_pet_id ON owners_pets (pet_id);
 
 CREATE TABLE notifications_staff (
     id SERIAL,
@@ -246,6 +254,10 @@ CREATE TABLE appointments (
     CONSTRAINT chk_appointments_end_time_gt_start_time CHECK (end_time > start_time)
 );
 
+CREATE INDEX idx_appointments_owner_pet_id ON appointments (owner_pet_id);
+
+CREATE INDEX idx_appointments_staff_id ON appointments (staff_id);
+
 CREATE TABLE medical_records (
     id SERIAL,
     appointment_id INT NOT NULL,
@@ -260,6 +272,8 @@ CREATE TABLE medical_records (
     CONSTRAINT uq_medical_records_appointment UNIQUE (appointment_id),
     CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT
 );
+
+CREATE INDEX idx_medical_records_appointment_id ON medical_records (appointment_id);
 
 CREATE TABLE medical_record_files (
     id SERIAL,
