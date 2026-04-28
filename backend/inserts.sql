@@ -9,7 +9,7 @@ SELECT * FROM document_type;
 INSERT INTO
     ROLES (NAME)
 VALUES ('Admin'),
-    ('Doctor'),
+    ('Veterinarian'),
     ('Receptionist');
 
 SELECT * FROM roles;
@@ -170,3 +170,80 @@ INSERT INTO
     )
 VALUES (1, 2),
     (2, 2);
+
+-- breeds
+
+SELECT * FROM breeds;
+
+INSERT INTO
+    BREEDS (species_id, NAME)
+VALUES (1, 'Labrador'),
+    (1, 'Bulldog'),
+    (2, 'Persian');
+
+-- pets
+
+SELECT * FROM pets;
+
+INSERT INTO
+    PETS (
+        SPECIES_ID,
+        BREED_ID,
+        PROFILE_IMAGE_ID,
+        NAME,
+        WEIGHT,
+        SEX,
+        DESCRIPTION
+    )
+VALUES (
+        1,
+        1,
+        3,
+        'Max',
+        25.5,
+        'Male',
+        'Friendly dog'
+    ),
+    (
+        2,
+        3,
+        3,
+        'Michi',
+        4.2,
+        'Female',
+        'Calm cat'
+    );
+
+-- owners_pets
+
+SELECT
+	*
+FROM
+	OWNERS_PETS;
+
+INSERT INTO
+	OWNERS_PETS (OWNER_ID, PET_ID, START_DATE, IS_PRIMARY)
+VALUES
+	(1, 1, '2023-01-01', TRUE),
+	(2, 2, '2023-02-01', TRUE);
+
+
+--appointment
+SELECT
+	*
+FROM 
+	appointments;
+	
+INSERT INTO
+	APPOINTMENTS (
+		SERVICE_ID,
+		STAFF_ID,
+		OWNER_PET_ID,
+		APPOINTMENT_STATUS_ID,
+		START_TIME,
+		END_TIME,
+		NOTES
+	)
+VALUES
+	(1, 1, 1, 1, NOW() - INTERVAL '20 minutes', NOW() + INTERVAL '10 minutes', 'Routine check'),
+	(4, 1, 2, 2, NOW() + INTERVAL '10 minutes', NOW() + INTERVAL '15 minutes', 'Vaccination');
