@@ -216,34 +216,101 @@ VALUES (
 
 -- owners_pets
 
-SELECT
-	*
-FROM
-	OWNERS_PETS;
+SELECT * FROM OWNERS_PETS;
 
 INSERT INTO
-	OWNERS_PETS (OWNER_ID, PET_ID, START_DATE, IS_PRIMARY)
-VALUES
-	(1, 1, '2023-01-01', TRUE),
-	(2, 2, '2023-02-01', TRUE);
-
+    OWNERS_PETS (
+        OWNER_ID,
+        PET_ID,
+        START_DATE,
+        IS_PRIMARY
+    )
+VALUES (1, 1, '2023-01-01', TRUE),
+    (2, 2, '2023-02-01', TRUE);
 
 --appointment
-SELECT
-	*
-FROM 
-	appointments;
-	
+SELECT * FROM appointments;
+
 INSERT INTO
-	APPOINTMENTS (
-		SERVICE_ID,
-		STAFF_ID,
-		OWNER_PET_ID,
-		APPOINTMENT_STATUS_ID,
-		START_TIME,
-		END_TIME,
-		NOTES
-	)
-VALUES
-	(1, 1, 1, 1, NOW() - INTERVAL '20 minutes', NOW() + INTERVAL '10 minutes', 'Routine check'),
-	(4, 1, 2, 2, NOW() + INTERVAL '10 minutes', NOW() + INTERVAL '15 minutes', 'Vaccination');
+    APPOINTMENTS (
+        SERVICE_ID,
+        STAFF_ID,
+        OWNER_PET_ID,
+        APPOINTMENT_STATUS_ID,
+        START_TIME,
+        END_TIME,
+        NOTES
+    )
+VALUES (
+        1,
+        1,
+        1,
+        1,
+        NOW() - INTERVAL '20 minutes',
+        NOW() + INTERVAL '10 minutes',
+        'Routine check'
+    ),
+    (
+        4,
+        1,
+        2,
+        2,
+        NOW() + INTERVAL '10 minutes',
+        NOW() + INTERVAL '15 minutes',
+        'Vaccination'
+    );
+
+-- medical_records
+
+SELECT * FROM MEDICAL_RECORDS;
+
+INSERT INTO
+    MEDICAL_RECORDS (
+        APPOINTMENT_ID,
+        STAFF_ID,
+        DIAGNOSIS,
+        TREATMENT,
+        NOTES
+    )
+VALUES (
+        1,
+        1,
+        'Healthy',
+        'No treatment',
+        'All good'
+    ),
+    (
+        2,
+        1,
+        'Vaccinated',
+        'Rabies vaccine applied',
+        'Next in 1 year'
+    );
+
+--form_contact_info
+
+INSERT INTO
+    FORM_CONTACT_INFO (NAME, EMAIL, PHONE)
+VALUES (
+        'Pedro Ruiz',
+        'pedro@gmail.com',
+        '300999999'
+    );
+
+SELECT * FROM FORM_CONTACT_INFO;
+
+-- form_messages
+
+SELECT * FROM FORM_messages;
+
+INSERT INTO
+    FORM_MESSAGES (
+        FORM_MESSAGE_STATUS_ID,
+        FORM_CONTACT_INFO_ID,
+        CONTENT
+    )
+VALUES (
+        1,
+        1,
+        'I want to schedule an appointment'
+    );
