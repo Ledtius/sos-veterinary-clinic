@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointment_status {
+  id           Int            @id(map: "pk_appointment_status") @default(autoincrement())
+  name         String         @unique(map: "uq_appointment_status_name") @db.VarChar(20)
+  appointments appointments[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model appointments {
+  id                    Int                @id(map: "pk_appointments") @default(autoincrement())
+  service_id            Int
+  staff_id              Int
+  owner_pet_id          Int
+  appointment_status_id Int
+  start_time            DateTime           @db.Timestamptz(6)
+  end_time              DateTime           @db.Timestamptz(6)
+  notes                 String?
+  created_at            DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime?          @db.Timestamptz(6)
+  appointment_status    appointment_status @relation(fields: [appointment_status_id], references: [id], onUpdate: NoAction, map: "fk_appointments_appointment_status")
+  owners_pets           owners_pets        @relation(fields: [owner_pet_id], references: [id], onUpdate: NoAction, map: "fk_appointments_owner_pet")
+  services              services           @relation(fields: [service_id], references: [id], onUpdate: NoAction, map: "fk_appointments_services")
+  staff                 staff              @relation(fields: [staff_id], references: [id], onUpdate: NoAction, map: "fk_appointments_staff")
+  medical_records       medical_records?
+
+  @@index([owner_pet_id], map: "idx_appointments_owner_pet_id")
+  @@index([staff_id], map: "idx_appointments_staff_id")
+}
+
+model auth_users {
+  id            Int    @id(map: "pk_auth_users") @default(autoincrement())
+  email         String @unique(map: "uq_auth_users_email") @db.VarChar(255)
+  password_hash String @db.VarChar(255)
+  staff         staff?
+}
+
+model breeds {
+  id         Int     @id(map: "pk_breeds") @default(autoincrement())
+  species_id Int
+  name       String  @db.VarChar(100)
+  species    species @relation(fields: [species_id], references: [id], onUpdate: NoAction, map: "fk_breeds_species")
+  pets       pets[]
+
+  @@unique([species_id, name], map: "uq_breeds_species_name")
+}
+
+model categories {
+  id       Int        @id(map: "pk_categories") @default(autoincrement())
+  name     String     @unique(map: "uq_categories_name") @db.VarChar(150)
+  services services[]
+}
+
+model document_type {
+  id            Int             @id(map: "pk_document_type") @default(autoincrement())
+  name          String          @unique(map: "uq_document_type_name") @db.VarChar(100)
+  personal_data personal_data[]
+}
+
+model form_contact_info {
+  id            Int             @id(map: "pk_form_contact_info") @default(autoincrement())
+  name          String          @db.VarChar(150)
+  email         String          @db.VarChar(255)
+  phone         String          @db.VarChar(30)
+  form_messages form_messages[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model form_message_status {
+  id            Int             @id(map: "pk_form_message_status") @default(autoincrement())
+  name          String          @unique(map: "uq_form_message_status_name") @db.VarChar(20)
+  form_messages form_messages[]
+}
+
+model form_messages {
+  id                     Int                 @id(map: "pk_form_messages") @default(autoincrement())
+  form_message_status_id Int
+  form_contact_info_id   Int
+  assigned_staff_id      Int?
+  content                String
+  created_at             DateTime            @default(now()) @db.Timestamptz(6)
+  staff                  staff?              @relation(fields: [assigned_staff_id], references: [id], onUpdate: NoAction, map: "fk_form_messages_assigned_staff")
+  form_contact_info      form_contact_info   @relation(fields: [form_contact_info_id], references: [id], onUpdate: NoAction, map: "fk_form_messages_form_contact_info")
+  form_message_status    form_message_status @relation(fields: [form_message_status_id], references: [id], onUpdate: NoAction, map: "fk_form_messages_form_message_status")
+}
+
+model medical_record_files {
+  id                Int             @id(map: "pk_medical_record_files") @default(autoincrement())
+  medical_record_id Int
+  file_url          String
+  file_type         String          @db.VarChar(50)
+  uploaded_at       DateTime?       @default(now()) @db.Timestamptz(6)
+  medical_records   medical_records @relation(fields: [medical_record_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_medical_record_files_medical_record")
+}
+
+model medical_records {
+  id                   Int                    @id(map: "pk_medical_records") @default(autoincrement())
+  appointment_id       Int                    @unique(map: "uq_medical_records_appointment")
+  staff_id             Int
+  diagnosis            String
+  treatment            String?
+  notes                String?
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime?              @db.Timestamptz(6)
+  medical_record_files medical_record_files[]
+  appointments         appointments           @relation(fields: [appointment_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_medical_records_appointment")
+  staff                staff                  @relation(fields: [staff_id], references: [id], onUpdate: NoAction, map: "fk_medical_records_staff")
+
+  @@index([appointment_id], map: "idx_medical_records_appointment_id")
+}
+
+model notifications {
+  id                  Int                   @id(map: "pk_notifications") @default(autoincrement())
+  message             String
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  is_read             Boolean?              @default(false)
+  read_at             DateTime?             @db.Timestamptz(6)
+  notifications_staff notifications_staff[]
+}
+
+model notifications_staff {
+  id              Int           @id(map: "pk_notifications_staff") @default(autoincrement())
+  notification_id Int
+  staff_id        Int
+  notifications   notifications @relation(fields: [notification_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_staff_notification")
+  staff           staff         @relation(fields: [staff_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_staff_staff")
+
+  @@unique([notification_id, staff_id], map: "uq_notifications_staff_notification_staff")
+}
+
+model owners {
+  id               Int             @id(map: "pk_owners") @default(autoincrement())
+  personal_data_id Int             @unique(map: "uq_owner_personal_data")
+  profile_image_id Int?
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?       @db.Timestamptz(6)
+  is_active        Boolean         @default(true)
+  personal_data    personal_data   @relation(fields: [personal_data_id], references: [id], onUpdate: NoAction, map: "fk_owners_personal_data")
+  profile_images   profile_images? @relation(fields: [profile_image_id], references: [id], onUpdate: NoAction, map: "fk_owners_profile_image")
+  owners_pets      owners_pets[]
+}
+
+model owners_pets {
+  id           Int            @id(map: "pk_owners_pets") @default(autoincrement())
+  owner_id     Int
+  pet_id       Int
+  start_date   DateTime       @db.Date
+  is_primary   Boolean        @default(false)
+  appointments appointments[]
+  owners       owners         @relation(fields: [owner_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_owners_pets_owner")
+  pets         pets           @relation(fields: [pet_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_owners_pets_pet")
+
+  @@unique([owner_id, pet_id], map: "uq_owners_pets_owner_pet")
+  @@index([owner_id], map: "idx_owners_pets_owner_id")
+  @@index([pet_id], map: "idx_owners_pets_pet_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model personal_data {
+  id               Int           @id(map: "pk_personal_data") @default(autoincrement())
+  document_type_id Int
+  first_name       String        @db.VarChar(100)
+  last_name        String        @db.VarChar(100)
+  document_number  String        @db.VarChar(20)
+  birth_date       DateTime      @db.Date
+  sex              String        @db.VarChar(10)
+  phone_number     String        @db.VarChar(30)
+  address          String        @db.VarChar(255)
+  created_at       DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?     @db.Timestamptz(6)
+  owners           owners?
+  document_type    document_type @relation(fields: [document_type_id], references: [id], onUpdate: NoAction, map: "fk_personal_data_document_type")
+  staff            staff?
+
+  @@unique([document_type_id, document_number], map: "uq_personal_data_document")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model pets {
+  id               Int             @id(map: "pk_pets") @default(autoincrement())
+  species_id       Int
+  breed_id         Int?
+  profile_image_id Int?
+  name             String          @db.VarChar(50)
+  weight           Decimal         @db.Decimal(6, 2)
+  sex              String          @db.VarChar(10)
+  description      String?
+  created_at       DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime?       @db.Timestamptz(6)
+  is_active        Boolean         @default(true)
+  owners_pets      owners_pets[]
+  breeds           breeds?         @relation(fields: [breed_id], references: [id], onUpdate: NoAction, map: "fk_pets_breed")
+  profile_images   profile_images? @relation(fields: [profile_image_id], references: [id], onUpdate: NoAction, map: "fk_pets_profile_image")
+  species          species         @relation(fields: [species_id], references: [id], onUpdate: NoAction, map: "fk_pets_species")
+
+  @@index([breed_id], map: "idx_pets_breed_id")
+  @@index([species_id], map: "idx_pets_species_id")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model profile_images {
+  id         Int      @id(map: "pk_profile_images") @default(autoincrement())
+  url        String   @unique(map: "uq_profile_images_url") @db.VarChar(255)
+  type       String   @db.VarChar(30)
+  is_default Boolean
+  owners     owners[]
+  pets       pets[]
+  staff      staff[]
+}
+
+model roles {
+  id    Int     @id(map: "pk_roles") @default(autoincrement())
+  name  String  @unique(map: "uq_roles_name") @db.VarChar(150)
+  staff staff[]
+}
+
+model services {
+  id           Int            @id(map: "pk_services") @default(autoincrement())
+  category_id  Int
+  name         String         @db.VarChar(150)
+  appointments appointments[]
+  categories   categories     @relation(fields: [category_id], references: [id], onUpdate: NoAction, map: "fk_services_category")
+
+  @@unique([category_id, name], map: "uq_services_category_name")
+}
+
+model species {
+  id     Int      @id(map: "pk_species") @default(autoincrement())
+  name   String   @unique(map: "uq_species_name") @db.VarChar(100)
+  breeds breeds[]
+  pets   pets[]
+}
+
+model staff {
+  id                  Int                   @id(map: "pk_staff") @default(autoincrement())
+  personal_data_id    Int                   @unique(map: "uq_staff_personal_data")
+  role_id             Int
+  auth_user_id        Int?                  @unique(map: "uq_staff_auth_user")
+  profile_image_id    Int?
+  created_at          DateTime              @default(now()) @db.Timestamptz(6)
+  updated_at          DateTime?             @db.Timestamptz(6)
+  is_active           Boolean               @default(true)
+  appointments        appointments[]
+  form_messages       form_messages[]
+  medical_records     medical_records[]
+  notifications_staff notifications_staff[]
+  auth_users          auth_users?           @relation(fields: [auth_user_id], references: [id], onUpdate: NoAction, map: "fk_staff_auth_user")
+  personal_data       personal_data         @relation(fields: [personal_data_id], references: [id], onUpdate: NoAction, map: "fk_staff_personal_data")
+  profile_images      profile_images?       @relation(fields: [profile_image_id], references: [id], onUpdate: NoAction, map: "fk_staff_profile_image")
+  roles               roles                 @relation(fields: [role_id], references: [id], onUpdate: NoAction, map: "fk_staff_role")
+}
