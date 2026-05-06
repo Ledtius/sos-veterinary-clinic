@@ -5,8 +5,10 @@ import ownerController from "../controllers/owner.controller";
 
 const { getAllOwners } = ownerController;
 
-const owner = () => {
+const ownerRoute = () => {
   ownerRouter.get("/", getAllOwners);
 };
+
+ownerRoute();
 
 export default ownerRouter;
