@@ -13,7 +13,17 @@ const petController = () => {
     }
   };
 
-  return { getAllPets };
+  const getPetById = async (req: Request, res: Response) => {
+    const data = await prismaClient.pets.findUnique({
+      where: {
+        id: 1,
+      },
+    });
+
+    res.send(data);
+  };
+
+  return { getAllPets, getPetById };
 };
 
 export default petController();
