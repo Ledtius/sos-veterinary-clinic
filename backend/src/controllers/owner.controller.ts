@@ -4,18 +4,43 @@ import type { owners } from "@prisma/client";
 
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
-    const data: owners[] = await prismaClient.owners.findMany();
-
     try {
-      console.log(data);
-      return res.send(data);
+      const data: owners[] = await prismaClient.owners.findMany();
+
+      return res.json(data);
     } catch (e) {
-      console.log(e);
-      return res.status(500).json({ message: "Error fetching owners data" });
+      return res
+        .status(500)
+        .json({ message: "Error fetching getAllOwners data" });
     }
   };
 
-  return { getAllOwners };
+  const getOwnerById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const ownerId = parseInt(id);
+
+      if (isNaN(ownerId)) {
+        return res.status(400).json({ message: "Invalid ID format" });
+      }
+
+      const data = await prismaClient.owners.findUnique({
+        where: { id: ownerId },
+      });
+      console.log(data);
+      if (!data) {
+        return res.status(404).json({ message: "Owner not found" });
+      }
+
+      return res.json(data);
+    } catch (e) {
+      return res
+        .status(500)
+        .json({ message: "Error fetching getOwnerById data" });
+    }
+  };
+
+  return { getAllOwners, getOwnerById };
 };
 
 export default ownerController();

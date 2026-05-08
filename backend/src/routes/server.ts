@@ -3,7 +3,7 @@ import petRouter from "./pet.route";
 import express from "express";
 const app = express();
 
-const main = () => {
+const server = () => {
   const port: Number = 3000;
 
   app.get("/", (req, res) => {
@@ -19,4 +19,4 @@ const main = () => {
   app.use("/pets", petRouter);
 };
 
-export default main;
+export default server;
