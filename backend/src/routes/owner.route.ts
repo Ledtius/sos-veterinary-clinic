@@ -1,16 +1,12 @@
-import express from "express";
-const ownerRouter = express.Router();
+import { Router } from "express";
+const ownerRouter = Router();
 
 import ownerController from "../controllers/owner.controller";
 
-const { getAllOwners, getOwnerById } = ownerController;
+const { getAllOwners, getOwnerById, postOwner } = ownerController;
 
-const ownerRoute = () => {
-  ownerRouter.get("/", getAllOwners);
-  ownerRouter.get("/:id", getOwnerById);
-  return ownerRoute;
-};
-
-ownerRoute();
+ownerRouter.get("/", getAllOwners);
+ownerRouter.get("/:id", getOwnerById);
+ownerRouter.post("/", postOwner);
 
 export default ownerRouter;
