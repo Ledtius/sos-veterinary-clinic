@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { prismaClient } from "../lib/prisma";
-import type { owners, personal_data } from "@prisma/client";
+import type { owners, personal_data, profile_images } from "@prisma/client";
 
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
@@ -57,6 +57,7 @@ const ownerController = () => {
         sex,
         phone_number,
         address,
+        url,
       } = req.body;
 
       const newPersonalData: personal_data =
@@ -73,18 +74,45 @@ const ownerController = () => {
           },
         });
 
-      const newOwner: owners = await prismaClient.owners.create({
-        data: {
-          personal_data_id: newPersonalData.id,
-          is_active: true,
-        },
-      });
+      let newOwner: owners;
 
+      if (url) {
+        const newProfileImage: profile_images =
+          await prismaClient.profile_images.create({
+            data: {
+              url: url,
+              type: "Owner",
+              is_default: false,
+            },
+          });
+
+        newOwner = await prismaClient.owners.create({
+          data: {
+            personal_data_id: newPersonalData.id,
+            profile_image_id: newProfileImage.id,
+            is_active: true,
+          },
+        });
+      } else {
+        const profileImage = await prismaClient.profile_images.findUnique({
+          where: {
+            type: "Owner",
+          },
+        });
+
+        newOwner = await prismaClient.owners.create({
+          data: {
+            personal_data_id: newPersonalData.id,
+            profile_image_id: profileImage?.id ?? 2,
+            is_active: true,
+          },
+        });
+      }
       return res
         .status(201)
         .json({ message: "Owner created successfully", data: newOwner });
     } catch (e) {
-      return res.status(500).json({ message: "Error creating owner" });
+      return res.status(500).json({ message: `Error creating owner ${e}` });
     }
   };
 
