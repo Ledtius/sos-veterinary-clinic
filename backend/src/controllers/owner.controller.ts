@@ -119,7 +119,29 @@ const ownerController = () => {
   const patchOwner = async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    const dataToUpdate = req.body;
+    const {
+      personal_data: {
+        document_type_id,
+        first_name,
+        last_name,
+        document_number,
+        birth_date,
+        sex,
+        phone_number,
+        address,
+      },
+      profile_image: { url },
+      is_active,
+    } = req.body;
+
+    const personalDataUpdate = await prismaClient.personal_data.update({
+      where: { id },
+      data: {},
+    });
+
+    // const dataToUpdate = req.body;
+
+    // const { personal_data_id, profile_image_id } = dataToUpdate;
 
     const owner: owners = await prismaClient.owners.update({
       where: { id: Number(id) },
