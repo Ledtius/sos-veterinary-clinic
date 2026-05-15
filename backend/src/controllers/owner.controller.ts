@@ -38,16 +38,33 @@ const ownerController = () => {
           return res.status(404).json({ message: "Owner not found" });
         }
         return res.json(owner);
+      } else {
       }
     } catch (e) {
-      return res
-        .status(500)
-        .json({ message: "Error fetching getOwnerById data" });
+      return res.status(500).json({ message: `Server error: ${e}` });
     }
   };
 
   const postOwner = async (req: Request, res: Response) => {
     try {
+      type profileImagePost = {
+        url?: string;
+      };
+
+      type ownerPost = {
+        document_type_id: number;
+        first_name: string;
+        last_name: string;
+        document_number: string;
+        birth_date: string;
+        sex: string;
+        phone_number: string;
+        address: string;
+        profile_image: profileImagePost;
+      };
+
+      const ownerData: ownerPost = req.body;
+
       const {
         document_type_id,
         first_name,
@@ -57,9 +74,10 @@ const ownerController = () => {
         sex,
         phone_number,
         address,
-        url,
-      } = req.body;
+        profile_image,
+      } = ownerData;
 
+      const { url } = profile_image;
       const newPersonalData: personal_data =
         await prismaClient.personal_data.create({
           data: {
@@ -77,6 +95,7 @@ const ownerController = () => {
       let newOwner: owners;
 
       if (url) {
+        console.log(url);
         const newProfileImage: profile_images =
           await prismaClient.profile_images.create({
             data: {
@@ -117,27 +136,43 @@ const ownerController = () => {
   };
 
   const patchOwner = async (req: Request, res: Response) => {
-    const { id } = req.params;
+    try {
+      const { id } = req.params;
 
-    const {
-      personal_data: {
-        document_type_id,
-        first_name,
-        last_name,
-        document_number,
-        birth_date,
-        sex,
-        phone_number,
-        address,
-      },
-      profile_image: { url },
-      is_active,
-    } = req.body;
+      type personalDataEdit = {
+        document_type_id?: number;
+        first_name?: string;
+        last_name?: string;
+        document_number?: string;
+        birth_date?: string;
+        sex?: string;
+        phone_number?: string;
+        address?: string;
+      };
 
-    const personalDataUpdate = await prismaClient.personal_data.update({
-      where: { id },
-      data: {},
-    });
+      type profileImageEdit = {
+        url?: string;
+      };
+
+      type ownerEdit = {
+        personal_data: personalDataEdit;
+        profile_image: profileImageEdit;
+        is_active: boolean;
+      };
+
+      const ownerData: ownerEdit = req.body;
+
+      if (typeof id === "string") {
+        const ownerId = parseInt(id);
+
+        const personalDataUpdate = await prismaClient.personal_data.update({
+          where: { id: ownerId },
+          data: { ...personal_data },
+        });
+      }
+    } catch (e) {
+      res.status(500).json({ message: `Server error: ${e}` });
+    }
 
     // const dataToUpdate = req.body;
 
