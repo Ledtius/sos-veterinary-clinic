@@ -95,7 +95,6 @@ const ownerController = () => {
       let newOwner: owners;
 
       if (url) {
-        console.log(url);
         const newProfileImage: profile_images =
           await prismaClient.profile_images.create({
             data: {
@@ -155,20 +154,84 @@ const ownerController = () => {
       };
 
       type ownerEdit = {
-        personal_data: personalDataEdit;
-        profile_image: profileImageEdit;
-        is_active: boolean;
+        personal_data?: personalDataEdit;
+        profile_image?: profileImageEdit;
+        is_active?: boolean;
       };
 
       const ownerData: ownerEdit = req.body;
 
+      const {
+        personal_data,
+        profile_image,
+        is_active: is_active_current,
+      } = ownerData;
+
       if (typeof id === "string") {
         const ownerId = parseInt(id);
 
-        const personalDataUpdate = await prismaClient.personal_data.update({
-          where: { id: ownerId },
-          data: { ...personal_data },
-        });
+        if (isNaN(ownerId)) {
+          return res.status(404).json({ message: "Invalid value" });
+        } else {
+          const currentOwnerData = await prismaClient.owners.findUnique({
+            where: { id: ownerId },
+          });
+
+          if (!currentOwnerData) {
+            return res.status(404).json({ message: "Owner not found" });
+          }
+          const { profile_image_id, personal_data_id, is_active } =
+            currentOwnerData;
+
+          if (personal_data) {
+            if (Object.keys(personal_data).length) {
+              const personalDataUpdate =
+                await prismaClient.personal_data.update({
+                  where: { id: personal_data_id },
+                  data: { ...personal_data },
+                });
+              res.status(201).json({
+                message: "Personal data updated successfully",
+                personalDataUpdate,
+              });
+            }
+          }
+
+          if (profile_image) {
+            if (Object.keys(profile_image).length) {
+              if (profile_image_id) {
+                const profileImageUpdate =
+                  await prismaClient.profile_images.update({
+                    where: { id: profile_image_id },
+                    data: { ...profile_image },
+                  });
+
+                return res.status(201).json({
+                  message: "Profile updated successfully",
+                  profileImageUpdate,
+                });
+              }
+            }
+          }
+
+          if (is_active_current === true || is_active_current === false) {
+            if (is_active !== is_active_current) {
+              const isActiveUpdate = await prismaClient.owners.update({
+                where: {
+                  id: ownerId,
+                },
+                data: {
+                  is_active: is_active_current,
+                },
+              });
+
+              return res.status(201).json({
+                message: "Profile state updated successfully",
+                isActiveUpdate,
+              });
+            }
+          }
+        }
       }
     } catch (e) {
       res.status(500).json({ message: `Server error: ${e}` });
@@ -184,7 +247,7 @@ const ownerController = () => {
     });
   };
 
-  return { getAllOwners, getOwnerById, postOwner };
+  return { getAllOwners, getOwnerById, postOwner, patchOwner };
 };
 
 export default ownerController();
