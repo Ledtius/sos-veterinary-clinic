@@ -32,13 +32,10 @@ const ownerController = () => {
           where: { id: ownerId },
         });
 
-        console.log(owner);
-
         if (!owner) {
           return res.status(404).json({ message: "Owner not found" });
         }
         return res.json(owner);
-      } else {
       }
     } catch (e) {
       return res.status(500).json({ message: `Server error: ${e}` });
@@ -77,7 +74,7 @@ const ownerController = () => {
         profile_image,
       } = ownerData;
 
-      const { url } = profile_image;
+      const { url } = profile_image ?? {};
       const newPersonalData: personal_data =
         await prismaClient.personal_data.create({
           data: {
@@ -93,8 +90,10 @@ const ownerController = () => {
         });
 
       let newOwner: owners;
-
-      if (url) {
+      if (!url) {
+        return res.status(404).json({ message: "Undefined empty value" });
+      }
+      if (url?.trim().length >= 1) {
         const newProfileImage: profile_images =
           await prismaClient.profile_images.create({
             data: {
@@ -143,7 +142,7 @@ const ownerController = () => {
         first_name?: string;
         last_name?: string;
         document_number?: string;
-        birth_date?: string;
+        birth_date?: string | Date;
         sex?: string;
         phone_number?: string;
         address?: string;
@@ -185,12 +184,16 @@ const ownerController = () => {
 
           if (personal_data) {
             if (Object.keys(personal_data).length) {
+              if (personal_data.birth_date) {
+                personal_data.birth_date = new Date(personal_data.birth_date);
+              }
+
               const personalDataUpdate =
                 await prismaClient.personal_data.update({
                   where: { id: personal_data_id },
                   data: { ...personal_data },
                 });
-              res.status(201).json({
+              return res.status(201).json({
                 message: "Personal data updated successfully",
                 personalDataUpdate,
               });
@@ -236,15 +239,6 @@ const ownerController = () => {
     } catch (e) {
       res.status(500).json({ message: `Server error: ${e}` });
     }
-
-    // const dataToUpdate = req.body;
-
-    // const { personal_data_id, profile_image_id } = dataToUpdate;
-
-    const owner: owners = await prismaClient.owners.update({
-      where: { id: Number(id) },
-      data: dataToUpdate,
-    });
   };
 
   return { getAllOwners, getOwnerById, postOwner, patchOwner };

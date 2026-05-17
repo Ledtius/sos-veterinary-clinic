@@ -5,22 +5,29 @@ import type { pets } from "@prisma/client";
 const petController = () => {
   const getAllPets = async (req: Request, res: Response) => {
     try {
-      const data: pets[] = await prismaClient.pets.findMany();
-
-      return res.send(data);
+      const pets = await prismaClient.pets.findMany();
+      res.status(201).json({ message: "Get pets successfully", pets });
     } catch (e) {
-      return res.status(500).json({ message: "Error fetching pets data" });
+      res.status(500).json({ message: "Error get all pets", e });
     }
   };
 
   const getPetById = async (req: Request, res: Response) => {
-    const data = await prismaClient.pets.findUnique({
-      where: {
-        id: 1,
-      },
-    });
+    const { id } = req.params;
 
-    res.send(data);
+    if (typeof id === "string") {
+      const idUrlInt = parseInt(id);
+
+      if (isNaN(idUrlInt)) {
+        return res.status(404).json({ message: "Invalid value" });
+      }
+
+      const pet = await prismaClient.pets.findUnique({
+        where: { id: idUrlInt },
+      });
+
+      res.status(201).json({ message: "Get pet successfully", pet });
+    }
   };
 
   return { getAllPets, getPetById };
