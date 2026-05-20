@@ -3,6 +3,8 @@ import { prismaClient } from "../lib/prisma";
 import type { pets } from "@prisma/client";
 import profile_images from "@prisma/client";
 
+import { ProfileImage, Pet } from "../types/pet";
+
 const petController = () => {
   const getAllPets = async (req: Request, res: Response) => {
     try {
@@ -24,7 +26,7 @@ const petController = () => {
       }
 
       const pet = await prismaClient.pets.findUnique({
-        where: { id: idUrlIntb },
+        where: { id: idUrlInt },
       });
 
       res.status(201).json({ message: "Get pet successfully", pet });

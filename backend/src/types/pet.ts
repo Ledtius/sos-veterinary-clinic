@@ -1,11 +1,9 @@
-export interface ProfileImage {
-  url: string;
-}
+import type { ProfileImageEdit } from "./profileImage";
 
-export interface Pet {
+export interface PetEdit {
   name?: string;
   weight?: number;
   sex?: string;
   description?: string;
-  profile_image?: ProfileImage;
+  profile_image?: ProfileImageEdit;
 }

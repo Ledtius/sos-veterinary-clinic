@@ -1,25 +1,18 @@
 //First form
+import type { ProfileImage } from "../types/pet";
 
-interface ProfileImage {
-  url: string;
-}
+let profileImg: ProfileImage = { url: "32" };
 
-interface Pet {
-  name?: string;
-  weight?: number;
-  sex?: string;
-  description?: string;
-  profile_image?: ProfileImage;
-}
+let currentValue = "32";
+import { prismaClient } from "../lib/prisma";
+import type { owners, pets } from "@prisma/client";
 
-let profileImg: profileImage = { url: "" };
-
-let curentValue = "32";
-
-const profileImgValidator = (
-  proImgObj: Object,
+const profileImgValidator = async (
+  proImgObj: ProfileImage,
   currentUrlImg?: string,
-): string => {
+  entity: string,
+  urlId: number,
+) => {
   let status;
   if (proImgObj) {
     if (Object.keys(proImgObj).length) {
@@ -28,6 +21,12 @@ const profileImgValidator = (
       if (url.trim()) {
         if (url !== currentUrlImg) {
           status = "Valid";
+
+          if (entity === "pet") {
+            // const entityUpdateImg = prismaClient.pets.update({where: {
+            //   id : urlId
+            // }});
+          }
         } else {
           status = "Equal";
         }
@@ -43,4 +42,21 @@ const profileImgValidator = (
   return status;
 };
 
-console.log(profileImgValidator(profileImg, curentValue));
+// console.log(profileImgValidator(profileImg, currentValue));
+
+// switch (profileImgValidator(profileImg, currentValue)) {
+//   case "Valid":
+//     console.log("Valid value");
+//     break;
+//   case "Empty string":
+//     console.log("Empty string");
+//     break;
+//   case "Empty obj":
+//     console.log("Empty obj");
+//     break;
+//   case "Undefined":
+//     console.log("Undefined");
+//     break;
+//   default:
+//     console.log("Undefined");
+//     break;
