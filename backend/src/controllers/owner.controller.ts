@@ -2,6 +2,10 @@ import type { Request, Response } from "express";
 import { prismaClient } from "../lib/prisma";
 import type { owners, personal_data, profile_images } from "@prisma/client";
 
+import type { OwnerEdit } from "../types/owner";
+
+import type { ProfileImageEdit } from "../types/profileImage";
+
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
     try {

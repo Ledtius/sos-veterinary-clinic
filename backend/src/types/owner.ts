@@ -1,6 +1,6 @@
 import type { ProfileImageEdit } from "./profileImage";
 
-type OwnerEdit = {
+export type OwnerEdit = {
   document_type_id: number;
   first_name: string;
   last_name: string;
