@@ -3,8 +3,7 @@ import { prismaClient } from "../lib/prisma";
 import type { owners, personal_data, profile_images } from "@prisma/client";
 
 import type { OwnerEdit } from "../types/owner";
-
-import type { ProfileImageEdit } from "../types/profileImage";
+import { getById, resById } from "../utils/Id.util";
 
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
@@ -21,26 +20,20 @@ const ownerController = () => {
     try {
       const { id } = req.params;
 
-      if (!id) {
-        return res.status(400).json({ message: "ID is missing" });
+      const ownerId = getById(id as string);
+
+      const { action, entityId } = ownerId;
+
+      const owner = await prismaClient.owners.findUnique({
+        where: { id: entityId as number },
+      });
+
+      resById(res, action, owner as owners);
+
+      if (!owner) {
+        return res.status(404).json({ message: "Owner not found" });
       }
-
-      if (typeof id === "string") {
-        const ownerId = parseInt(id);
-
-        if (isNaN(ownerId)) {
-          return res.status(400).json({ message: "Invalid ID format" });
-        }
-
-        const owner = await prismaClient.owners.findUnique({
-          where: { id: ownerId },
-        });
-
-        if (!owner) {
-          return res.status(404).json({ message: "Owner not found" });
-        }
-        return res.json(owner);
-      }
+      return res.json(owner);
     } catch (e) {
       return res.status(500).json({ message: `Server error: ${e}` });
     }
@@ -48,23 +41,7 @@ const ownerController = () => {
 
   const postOwner = async (req: Request, res: Response) => {
     try {
-      type profileImagePost = {
-        url?: string;
-      };
-
-      type ownerPost = {
-        document_type_id: number;
-        first_name: string;
-        last_name: string;
-        document_number: string;
-        birth_date: string;
-        sex: string;
-        phone_number: string;
-        address: string;
-        profile_image: profileImagePost;
-      };
-
-      const ownerData: ownerPost = req.body;
+      const ownerData: OwnerEdit = req.body;
 
       const {
         document_type_id,
