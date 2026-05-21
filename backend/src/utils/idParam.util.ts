@@ -21,13 +21,18 @@ export const getById = (id: string): GetActions => {
 export const resById = async (
   res: Response,
   action: Actions,
-  entity: owners | pets | staff,
+  entity?: owners | pets | staff,
 ) => {
   if (action === "UNDEFINED/NULL")
     return res.status(400).json({ message: `${action} ID` });
 
-  if (action === "INVALID FORMAT")
+  if (action === "INVALID FORMAT") {
     return res.status(404).json({ message: `${action} ID` });
+  }
 
-  if (action === "VALID") return entity;
+  if (action === "VALID") {
+    if (!entity)
+      return res.status(404).json({ message: `THIS ELEMENT DOESN'T EXIST` });
+    else return res.status(201).json({ message: `GET SUCCESSFULLY`, entity });
+  }
 };

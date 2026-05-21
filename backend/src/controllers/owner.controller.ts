@@ -3,7 +3,7 @@ import { prismaClient } from "../lib/prisma";
 import type { owners, personal_data, profile_images } from "@prisma/client";
 
 import type { OwnerEdit } from "../types/owner";
-import { getById, resById } from "../utils/Id.util";
+import { getById, resById } from "../utils/idParam.util";
 
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
@@ -24,17 +24,17 @@ const ownerController = () => {
 
       const { action, entityId } = ownerId;
 
+      if (!entityId) {
+        return resById(res, action);
+      }
+
       const owner = await prismaClient.owners.findUnique({
-        where: { id: entityId as number },
+        where: { id: entityId },
       });
 
-      resById(res, action, owner as owners);
-
-      if (!owner) {
-        return res.status(404).json({ message: "Owner not found" });
-      }
-      return res.json(owner);
+      return resById(res, action, owner as owners);
     } catch (e) {
+      console.log("123");
       return res.status(500).json({ message: `Server error: ${e}` });
     }
   };
