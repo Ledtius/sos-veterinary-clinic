@@ -1,7 +1,13 @@
-import type { ProfileImageEdit } from "./profileImage";
+export interface DocumentTypePost {
+  document_type_id: 1 | 2;
+}
 
-export type OwnerEdit = {
-  document_type_id: number;
+export interface ProfileImagePost {
+  url: string;
+}
+
+export interface PersonalDataPost {
+  document_type: DocumentTypePost;
   first_name: string;
   last_name: string;
   document_number: string;
@@ -9,5 +15,9 @@ export type OwnerEdit = {
   sex: string;
   phone_number: string;
   address: string;
-  profile_image: ProfileImageEdit;
-};
+}
+
+export interface OwnerPost {
+  personal_data: PersonalDataPost;
+  profile_image?: ProfileImagePost;
+}

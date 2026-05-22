@@ -1,62 +1,22 @@
-//First form
-import type { ProfileImage } from "../types/pet";
+import type { Response } from "express";
 
-let profileImg: ProfileImage = { url: "32" };
+type PostActionImage = "NO URL VALUE" | "URL VALUE" | "EMPTY URL VALUE";
 
-let currentValue = "32";
-import { prismaClient } from "../lib/prisma";
-import type { owners, pets } from "@prisma/client";
+interface PostActionImageObject {
+  action: PostActionImage;
+  urlValue?: string;
+}
 
-const profileImgValidator = async (
-  proImgObj: ProfileImage,
-  currentUrlImg?: string,
-  entity: string,
-  urlId: number,
-) => {
-  let status;
-  if (proImgObj) {
-    if (Object.keys(proImgObj).length) {
-      const { url } = proImgObj;
-
-      if (url.trim()) {
-        if (url !== currentUrlImg) {
-          status = "Valid";
-
-          if (entity === "pet") {
-            // const entityUpdateImg = prismaClient.pets.update({where: {
-            //   id : urlId
-            // }});
-          }
-        } else {
-          status = "Equal";
-        }
-      } else {
-        status = "Empty string";
-      }
-    } else {
-      status = "Empty obj";
-    }
-  } else {
-    status = "Undefined";
+export const imageValue = (
+  urlValue: string | null | undefined,
+): PostActionImageObject => {
+  if (!urlValue) return { action: "NO URL VALUE" };
+  else {
+    if (!urlValue.trim()) return { action: "EMPTY URL VALUE" };
+    else return { action: "URL VALUE", urlValue };
   }
-  return status;
 };
 
-// console.log(profileImgValidator(profileImg, currentValue));
-
-// switch (profileImgValidator(profileImg, currentValue)) {
-//   case "Valid":
-//     console.log("Valid value");
-//     break;
-//   case "Empty string":
-//     console.log("Empty string");
-//     break;
-//   case "Empty obj":
-//     console.log("Empty obj");
-//     break;
-//   case "Undefined":
-//     console.log("Undefined");
-//     break;
-//   default:
-//     console.log("Undefined");
-//     break;
+export const postImage = (res: Response, imageValue: PostActionImageObject) => {
+  const { action, urlValue } = imageValue;
+};

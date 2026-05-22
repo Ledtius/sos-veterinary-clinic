@@ -2,8 +2,9 @@ import type { Request, Response } from "express";
 import { prismaClient } from "../lib/prisma";
 import type { owners, personal_data, profile_images } from "@prisma/client";
 
-import type { OwnerEdit } from "../types/owner";
+import type { OwnerEdit, OwnerPost } from "../types/owner";
 import { getById, resById } from "../utils/idParam.util";
+import { imageValue, postImage } from "../utils/image.util";
 
 const ownerController = () => {
   const getAllOwners = async (req: Request, res: Response) => {
@@ -39,10 +40,14 @@ const ownerController = () => {
 
   const postOwner = async (req: Request, res: Response) => {
     try {
-      const ownerData: OwnerEdit = req.body;
+      const ownerBodyData: OwnerPost = req.body;
+
+      const { personal_data, profile_image } = ownerBodyData;
+
+      const { url } = profile_image ?? {};
 
       const {
-        document_type_id,
+        document_type,
         first_name,
         last_name,
         document_number,
@@ -50,10 +55,10 @@ const ownerController = () => {
         sex,
         phone_number,
         address,
-        profile_image,
-      } = ownerData;
+      } = personal_data;
 
-      const { url } = profile_image ?? {};
+      const { document_type_id } = document_type;
+
       const newPersonalData: personal_data =
         await prismaClient.personal_data.create({
           data: {
@@ -69,9 +74,28 @@ const ownerController = () => {
         });
 
       let newOwner: owners;
-      if (!url) {
-        return res.status(404).json({ message: "Undefined empty value" });
+
+      const { action, urlValue } = imageValue(url);
+
+      if (action !== "URL VALUE") {
+        const defaultImage: profile_images =
+          await prismaClient.profile_images.findUnique({
+            where: { type: "Owner", is_default: true },
+          });
+
+        /* Extract name of the file  */
+        /* DO this in other file */
+      } else {
+        const newImage: profile_images =
+          await prismaClient.profile_images.create({
+            data: {
+              url: urlValue as string,
+              is_default: false,
+              type: "Owner",
+            },
+          });
       }
+
       if (url?.trim().length >= 1) {
         const newProfileImage: profile_images =
           await prismaClient.profile_images.create({
