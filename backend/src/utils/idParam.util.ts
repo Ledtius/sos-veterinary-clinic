@@ -3,7 +3,7 @@ import type { Response } from "express";
 
 type Actions = "UNDEFINED/NULL" | "INVALID FORMAT" | "VALID";
 
-interface GetActions {
+export interface GetActions {
   action: Actions;
   entityId?: number;
 }
@@ -21,7 +21,7 @@ export const getById = (id: string): GetActions => {
 export const resById = async (
   res: Response,
   action: Actions,
-  entity?: owners | pets | staff,
+  entity?: owners | pets | staff | undefined | null,
 ) => {
   if (action === "UNDEFINED/NULL")
     return res.status(400).json({ message: `${action} ID` });

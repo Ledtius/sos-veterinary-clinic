@@ -20,19 +20,17 @@ const ownerController = () => {
     try {
       const { id } = req.params;
 
-      const ownerId = getById(id as string);
+      const ownerActions = getById(id as string);
 
-      const { action, entityId } = ownerId;
+      const { action, entityId } = ownerActions;
 
-      if (!entityId) {
-        return resById(res, action);
-      }
+      if (!entityId) return resById(res, action);
 
       const owner = await prismaClient.owners.findUnique({
         where: { id: entityId },
       });
 
-      return resById(res, action, owner as owners);
+      return resById(res, action, owner);
     } catch (e) {
       console.log("123");
       return res.status(500).json({ message: `Server error: ${e}` });
@@ -148,13 +146,13 @@ const ownerController = () => {
       } = ownerData;
 
       if (typeof id === "string") {
-        const ownerId = parseInt(id);
+        const ownerActions = parseInt(id);
 
-        if (isNaN(ownerId)) {
+        if (isNaN(ownerActions)) {
           return res.status(404).json({ message: "Invalid value" });
         } else {
           const currentOwnerData = await prismaClient.owners.findUnique({
-            where: { id: ownerId },
+            where: { id: ownerActions },
           });
 
           if (!currentOwnerData) {
@@ -202,7 +200,7 @@ const ownerController = () => {
             if (is_active !== is_active_current) {
               const isActiveUpdate = await prismaClient.owners.update({
                 where: {
-                  id: ownerId,
+                  id: ownerActions,
                 },
                 data: {
                   is_active: is_active_current,

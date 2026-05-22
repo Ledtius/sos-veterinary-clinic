@@ -1,6 +1,8 @@
 import express, { type Request, type Response } from "express";
 import { prismaClient } from "../lib/prisma";
 import type { PetEdit } from "../types/pet";
+import { getById, resById, type GetActions } from "../utils/idParam.util";
+import type { pets } from "@prisma/client";
 
 const petController = () => {
   const getAllPets = async (req: Request, res: Response) => {
@@ -15,19 +17,19 @@ const petController = () => {
   const getPetById = async (req: Request, res: Response) => {
     const { id } = req.params;
 
-    if (typeof id === "string") {
-      const idUrlInt = parseInt(id);
+    const petActions: GetActions = getById(id as string);
 
-      if (isNaN(idUrlInt)) {
-        return res.status(404).json({ message: "Invalid value" });
-      }
+    const { action, entityId } = petActions;
 
-      const pet = await prismaClient.pets.findUnique({
-        where: { id: idUrlInt },
-      });
+    if (!entityId) return resById(res, action);
 
-      res.status(201).json({ message: "Get pet successfully", pet });
-    }
+    const pet = await prismaClient.pets.findUnique({
+      where: {
+        id: entityId,
+      },
+    });
+
+    return resById(res, action, pet);
   };
 
   const patchPet = async (req: Request, res: Response) => {
