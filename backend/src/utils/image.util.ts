@@ -23,44 +23,55 @@ interface ActionImageObject {
 
 export const postPersonalData = async (
   req: Request,
+  res: Response,
   imageValue: (urlValue: string | null | undefined) => ActionImageObject,
 ) => {
-  const ownerBodyData: OwnerRBPost = req.body;
+  try {
+    const ownerBodyData: OwnerRBPost = req.body;
 
-  const { personal_data, profile_image } = ownerBodyData;
+    const { personal_data, profile_image } = ownerBodyData;
 
-  const { url } = profile_image ?? {};
+    const { url } = profile_image ?? {};
 
-  const {
-    document_type,
-    first_name,
-    last_name,
-    document_number,
-    birth_date,
-    sex,
-    phone_number,
-    address,
-  } = personal_data;
+    const {
+      document_type,
+      first_name,
+      last_name,
+      document_number,
+      birth_date,
+      sex,
+      phone_number,
+      address,
+    } = personal_data;
 
-  const { document_type_id } = document_type;
+    const { document_type_id } = document_type;
 
-  const newPersonalData: personal_data =
-    await prismaClient.personal_data.create({
-      data: {
-        document_type_id,
-        first_name,
-        last_name,
-        document_number,
-        birth_date: new Date(birth_date),
-        sex,
-        phone_number,
-        address,
-      },
-    });
+    console.log(personal_data, url);
+    const newPersonalData: personal_data =
+      await prismaClient.personal_data.create({
+        data: {
+          document_type_id,
+          first_name,
+          last_name,
+          document_number,
+          birth_date: new Date(birth_date),
+          sex,
+          phone_number,
+          address,
+        },
+      });
 
-  const imgValueObj: ActionImageObject = imageValue(url);
+    console.log(newPersonalData);
 
-  return { imgValueObj, newPersonalData };
+    if (newPersonalData)
+      res.status(201).json({ message: "Personal data created successfully " });
+
+    const imgValueObj: ActionImageObject = imageValue(url);
+
+    return { imgValueObj, newPersonalData };
+  } catch (e) {
+    res.status(500).json({ message: `Error in the server ${e}` });
+  }
 };
 
 export const imageValue = (
@@ -75,8 +86,8 @@ export const imageValue = (
 
 export const postImage = async (
   imageValue: ActionImageObject,
-  entityName: EntityName,
   newPersonalData: personal_data,
+  entityName: EntityName,
 ) => {
   const { action, urlValue } = imageValue;
 
@@ -118,7 +129,7 @@ const postNewEntity = async (
       }));
 
     case "Staff":
-      return (newEntity = null);
+      return { newPersonalData, switchImage };
     default:
       break;
   }

@@ -25,5 +25,5 @@ export interface OwnerRBPost {
 
 export interface OwnerPost {
   personal_data_id: number;
-  profile_image_id? : number;
+  profile_image_id?: number;
 }
