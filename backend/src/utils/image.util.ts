@@ -1,7 +1,12 @@
 import type { Response, Request } from "express";
-import type { OwnerPost, OwnerRBPost } from "../types/owner";
+import type {
+  OwnerPost,
+  OwnerRBPost,
+  PersonalDataRBPost,
+} from "../types/owner";
 
 import { prismaClient } from "../lib/prisma";
+
 import type {
   owners,
   personal_data,
@@ -63,8 +68,7 @@ export const postPersonalData = async (
 
     console.log(newPersonalData);
 
-    if (newPersonalData)
-      res.status(201).json({ message: "Personal data created successfully " });
+    // res.status(201).json({ message: "Personal data created successfully " });
 
     const imgValueObj: ActionImageObject = imageValue(url);
 
@@ -88,6 +92,7 @@ export const postImage = async (
   imageValue: ActionImageObject,
   newPersonalData: personal_data,
   entityName: EntityName,
+  res: Response,
 ) => {
   const { action, urlValue } = imageValue;
 
@@ -97,9 +102,16 @@ export const postImage = async (
     const defaultImage = await prismaClient.profile_images.findUnique({
       where: { type: entityName, is_default: switchDefault },
     });
-
-    postNewEntity(entityName, defaultImage as profile_images, newPersonalData);
+    console.info(`Creating a relationship with a default image`);
+    return postNewEntity(
+      entityName,
+      defaultImage as profile_images,
+      newPersonalData,
+      res,
+    );
   } else {
+    console.info(`Creating a new profile_image record`);
+
     const newImage = await prismaClient.profile_images.create({
       data: {
         url: urlValue as string,
@@ -108,7 +120,7 @@ export const postImage = async (
       },
     });
 
-    postNewEntity(entityName, newImage, newPersonalData);
+    return postNewEntity(entityName, newImage, newPersonalData, res);
   }
 };
 
@@ -116,21 +128,37 @@ const postNewEntity = async (
   entityName: EntityName,
   switchImage: profile_images,
   newPersonalData: personal_data,
+  res: Response,
 ) => {
   let newEntity;
 
-  switch (entityName) {
-    case "Owner":
-      return (newEntity = prismaClient.owners.create({
+  if (entityName === "Owner") {
+    try {
+      newEntity = prismaClient.owners.create({
         data: {
           personal_data_id: newPersonalData?.id,
           profile_image_id: switchImage?.id,
         },
-      }));
+      });
 
-    case "Staff":
-      return { newPersonalData, switchImage };
-    default:
-      break;
+      // res
+      //   .status(201)
+      //   .json({ message: "Owner created successfully", newEntity });
+      console.log("first");
+
+      return newEntity;
+    } catch (e) {
+      res.status(500).json({ message: `Error ${e}` });
+      console.error(e);
+    }
+  } else {
   }
+  // switch (entityName) {
+  //   case "Owner":
+
+  //   case "Staff":
+  //     return { newPersonalData, switchImage };
+  //   default:
+  //     break;
+  // }
 };

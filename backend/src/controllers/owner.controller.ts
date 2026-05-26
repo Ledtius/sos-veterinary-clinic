@@ -40,9 +40,15 @@ const ownerController = () => {
 
   const postOwner = async (req: Request, res: Response) => {
     try {
-      console.log("ssss");
-      const responseS = await postPersonalData(req, res, imageValue);
-      // return responseS;
+      const postPDResult: any = await postPersonalData(req, res, imageValue);
+
+      const { imgValueObj, newPersonalData } = postPDResult;
+
+      const owner = await postImage(imgValueObj, newPersonalData, "Owner", res);
+
+      res.status(201).json({ message: "Owner created successfully", owner });
+
+      return owner;
     } catch (e) {}
   };
 
