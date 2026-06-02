@@ -17,6 +17,8 @@ CREATE TABLE auth_users (
     id SERIAL,
     email VARCHAR(255) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_auth_users PRIMARY KEY (id),
     CONSTRAINT uq_auth_users_email UNIQUE (email)
 );
