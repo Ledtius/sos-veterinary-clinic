@@ -193,15 +193,16 @@ CREATE TABLE owners_pets (
     pet_id INT NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
     start_date DATE NOT NULL,
+    end_date DATE NULL,
     CONSTRAINT pk_owners_pets PRIMARY KEY (id),
     CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id) ON DELETE CASCADE,
     CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE,
-    CONSTRAINT uq_owners_pets_owner_pet UNIQUE (owner_id, pet_id)
 );
 
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
 WHERE
-    is_primary = true;
+    is_primary = true
+    AND end_date IS NULL;
 
 CREATE INDEX idx_owners_pets_owner_id ON owners_pets (owner_id);
 
