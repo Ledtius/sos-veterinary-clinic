@@ -38,43 +38,32 @@ CREATE TABLE categories (
 CREATE TABLE profile_images (
     id SERIAL,
     url VARCHAR(255) NOT NULL,
-    type VARCHAR(30) NOT NULL,
-    is_default BOOLEAN NOT NULL,
     CONSTRAINT pk_profile_images PRIMARY KEY (id),
-    CONSTRAINT uq_profile_images_url UNIQUE (url),
-    CONSTRAINT chk_profile_images_type CHECK (
-        type IN ('Staff', 'Pet', 'Owner')
-    )
+    CONSTRAINT uq_profile_images_url UNIQUE (url)
 );
-
-CREATE UNIQUE INDEX unique_default_per_type ON profile_images(type) WHERE is_default = true;
 
 CREATE TABLE appointment_status (
     id SERIAL,
-    name VARCHAR(20) NOT NULL,
+    name VARCHAR(20) NOT NULL DEFAULT 'Pending',
     CONSTRAINT pk_appointment_status PRIMARY KEY (id),
     CONSTRAINT chk_appointment_status_name CHECK (
         name IN (
             'Pending',
             'In Process',
-            'Completed'
+            'Completed',
+            'Canceled'
         )
     ),
     CONSTRAINT uq_appointment_status_name UNIQUE (name)
 );
 
-CREATE TABLE form_message_status (
+CREATE TABLE notifications (
     id SERIAL,
-    name VARCHAR(20) NOT NULL,
-    CONSTRAINT pk_form_message_status PRIMARY KEY (id),
-    CONSTRAINT chk_form_message_status_name CHECK (
-        name IN (
-            'Unread',
-            'Viewed',
-            'Responded'
-        )
-    ),
-    CONSTRAINT uq_form_message_status_name UNIQUE (name)
+    message TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    is_read BOOLEAN DEFAULT false,
+    read_at TIMESTAMPTZ,
+    CONSTRAINT pk_notifications PRIMARY KEY (id)
 );
 
 -- One dependency
@@ -82,15 +71,15 @@ CREATE TABLE form_message_status (
 CREATE TABLE personal_data (
     id SERIAL,
     document_type_id INT NOT NULL,
+    document_number VARCHAR(20) NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    document_number VARCHAR(20) NOT NULL,
     birth_date DATE NOT NULL,
     sex VARCHAR(10) NOT NULL,
     phone_number VARCHAR(30) NOT NULL,
     address VARCHAR(255) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_personal_data PRIMARY KEY (id),
     CONSTRAINT fk_personal_data_document_type FOREIGN KEY (document_type_id) REFERENCES document_type (id) ON DELETE RESTRICT,
     CONSTRAINT chk_personal_data_sex CHECK (
@@ -120,22 +109,14 @@ CREATE TABLE services (
     CONSTRAINT uq_services_category_name UNIQUE (category_id, name)
 );
 
-CREATE TABLE form_contact_info (
-    id SERIAL,
-    name VARCHAR(150) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(30) NOT NULL,
-    CONSTRAINT pk_form_contact_info PRIMARY KEY (id)
-);
-
 -- Core entities
 
 CREATE TABLE owners (
     id SERIAL,
     personal_data_id INT NOT NULL,
-    profile_image_id INT,
+    profile_image_id INT DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_owners PRIMARY KEY (id),
     CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
     CONSTRAINT fk_owners_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
@@ -148,14 +129,14 @@ ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 CREATE TABLE staff (
     id SERIAL,
     personal_data_id INT NOT NULL,
-    role_id INT NOT NULL,
-    auth_user_id INT,
+    auth_user_id INT NOT NULL,
+    primary_role_id INT NOT NULL,
     profile_image_id INT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_staff PRIMARY KEY (id),
     CONSTRAINT fk_staff_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_staff_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_staff_primary_role FOREIGN KEY (primary_role_id) REFERENCES roles (id) ON DELETE RESTRICT,
     CONSTRAINT fk_staff_auth_user FOREIGN KEY (auth_user_id) REFERENCES auth_users (id) ON DELETE SET NULL,
     CONSTRAINT fk_staff_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
     CONSTRAINT uq_staff_personal_data UNIQUE (personal_data_id),
@@ -167,11 +148,13 @@ ALTER TABLE staff ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 CREATE TABLE pets (
     id SERIAL,
     species_id INT NOT NULL,
-    breed_id INT NULL,
+    breed_id INT,
     profile_image_id INT,
     name VARCHAR(50) NOT NULL,
     weight NUMERIC(6, 2) NOT NULL,
     sex VARCHAR(10) NOT NULL,
+    birth_date DATE,
+    is_birth_date_estimated NOT NULL DEFAULT false,
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ,
@@ -190,25 +173,24 @@ CREATE INDEX idx_pets_breed_id ON pets (breed_id);
 
 CREATE INDEX idx_pets_species_id ON pets (species_id);
 
--- Notifications Base
-
-CREATE TABLE notifications (
-    id SERIAL,
-    message TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    is_read BOOLEAN DEFAULT false,
-    read_at TIMESTAMPTZ,
-    CONSTRAINT pk_notifications PRIMARY KEY (id)
-);
-
 -- M:N tables
+
+CREATE TABLE staff_roles (
+    id SERIAL,
+    staff_id INT NOT NULL,
+    role_id INT NOT NULL,
+    CONSTRAINT pk_staff_roles PRIMARY KEY (id),
+    CONSTRAINT fk_staff_roles_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE CASCADE,
+    CONSTRAINT fk_staff_roles_role FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE RESTRICT,
+    CONSTRAINT uq_staff_roles_role UNIQUE (staff_id, role_id)
+);
 
 CREATE TABLE owners_pets (
     id SERIAL,
     owner_id INT NOT NULL,
     pet_id INT NOT NULL,
-    start_date DATE NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
+    start_date DATE NOT NULL,
     CONSTRAINT pk_owners_pets PRIMARY KEY (id),
     CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id) ON DELETE CASCADE,
     CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE,
@@ -283,19 +265,4 @@ CREATE TABLE medical_record_files (
     uploaded_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT pk_medical_record_files PRIMARY KEY (id),
     CONSTRAINT fk_medical_record_files_medical_record FOREIGN KEY (medical_record_id) REFERENCES medical_records (id) ON DELETE CASCADE
-);
-
--- Forms
-
-CREATE TABLE form_messages (
-    id SERIAL,
-    form_message_status_id INT NOT NULL,
-    form_contact_info_id INT NOT NULL,
-    assigned_staff_id INT,
-    content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT pk_form_messages PRIMARY KEY (id),
-    CONSTRAINT fk_form_messages_form_message_status FOREIGN KEY (form_message_status_id) REFERENCES form_message_status (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_form_messages_form_contact_info FOREIGN KEY (form_contact_info_id) REFERENCES form_contact_info (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_form_messages_assigned_staff FOREIGN KEY (assigned_staff_id) REFERENCES staff (id) ON DELETE SET NULL
 );
