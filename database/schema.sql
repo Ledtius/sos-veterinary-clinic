@@ -156,10 +156,10 @@ CREATE TABLE pets (
     weight NUMERIC(6, 2) NOT NULL,
     sex VARCHAR(10) NOT NULL,
     birth_date DATE,
-    is_birth_date_estimated NOT NULL DEFAULT false,
+    is_birth_date_estimated BOOLEAN NOT NULL DEFAULT false,
     description TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_pets PRIMARY KEY (id),
     CONSTRAINT fk_pets_species FOREIGN KEY (species_id) REFERENCES species (id) ON DELETE RESTRICT,
     CONSTRAINT fk_pets_breed FOREIGN KEY (breed_id) REFERENCES breeds (id) ON DELETE SET NULL,
@@ -196,7 +196,7 @@ CREATE TABLE owners_pets (
     end_date DATE NULL,
     CONSTRAINT pk_owners_pets PRIMARY KEY (id),
     CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id) ON DELETE CASCADE,
-    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE,
+    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
@@ -230,7 +230,7 @@ CREATE TABLE appointments (
     end_time TIMESTAMPTZ NOT NULL,
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_appointments PRIMARY KEY (id),
     CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT,
     CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT,
@@ -251,11 +251,11 @@ CREATE TABLE medical_records (
     treatment TEXT,
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ NULL,
     CONSTRAINT pk_medical_records PRIMARY KEY (id),
     CONSTRAINT fk_medical_records_appointment FOREIGN KEY (appointment_id) REFERENCES appointments (id) ON DELETE CASCADE,
-    CONSTRAINT uq_medical_records_appointment UNIQUE (appointment_id),
-    CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT
+    CONSTRAINT fk_medical_records_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT,
+    CONSTRAINT uq_medical_records_appointment UNIQUE (appointment_id)
 );
 
 CREATE INDEX idx_medical_records_appointment_id ON medical_records (appointment_id);
@@ -269,3 +269,42 @@ CREATE TABLE medical_record_files (
     CONSTRAINT pk_medical_record_files PRIMARY KEY (id),
     CONSTRAINT fk_medical_record_files_medical_record FOREIGN KEY (medical_record_id) REFERENCES medical_records (id) ON DELETE CASCADE
 );
+
+-- Functions
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;    
+END;
+$$ language 'plpgsql';
+
+-- Triggers
+
+CREATE TRIGGER trigger_update_auth_users
+    BEFORE UPDATE ON auth_users
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_personal_data
+    BEFORE UPDATE ON personal_data
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_staff
+    BEFORE UPDATE ON staff
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_owners
+    BEFORE UPDATE ON owners
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_pets
+    BEFORE UPDATE ON pets
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_appointments
+    BEFORE UPDATE ON appointments
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+CREATE TRIGGER trigger_update_medical_records
+    BEFORE UPDATE ON medical_records
+    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
