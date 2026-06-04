@@ -225,6 +225,7 @@ CREATE TABLE appointments (
     service_id INT NOT NULL,
     staff_id INT NOT NULL,
     owner_pet_id INT NOT NULL,
+    parent_medical_record_id INT NULL,
     appointment_status_id INT NOT NULL,
     start_time TIMESTAMPTZ NOT NULL,
     end_time TIMESTAMPTZ NOT NULL,
@@ -235,6 +236,7 @@ CREATE TABLE appointments (
     CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT,
     CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT,
     CONSTRAINT fk_appointments_owner_pet FOREIGN KEY (owner_pet_id) REFERENCES owners_pets (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_appointments_parent_medical_record FOREIGN KEY (parent_medical_record_id) REFERENCES medical_records (id) ON DELETE SET NULL,
     CONSTRAINT fk_appointments_appointment_status FOREIGN KEY (appointment_status_id) REFERENCES appointment_status (id) ON DELETE RESTRICT,
     CONSTRAINT chk_appointments_end_time_gt_start_time CHECK (end_time > start_time)
 );
