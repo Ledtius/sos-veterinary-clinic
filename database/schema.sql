@@ -113,19 +113,19 @@ CREATE TABLE services (
 
 -- Core entities
 
-CREATE TABLE owners (
+CREATE TABLE clients (
     id SERIAL,
     personal_data_id INT NOT NULL,
     profile_image_id INT DEFAULT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NULL,
-    CONSTRAINT pk_owners PRIMARY KEY (id),
-    CONSTRAINT fk_owners_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_owners_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
-    CONSTRAINT uq_owner_personal_data UNIQUE (personal_data_id)
+    CONSTRAINT pk_clients PRIMARY KEY (id),
+    CONSTRAINT fk_clients_personal_data FOREIGN KEY (personal_data_id) REFERENCES personal_data (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_clients_profile_image FOREIGN KEY (profile_image_id) REFERENCES profile_images (id) ON DELETE SET NULL,
+    CONSTRAINT uq_client_personal_data UNIQUE (personal_data_id)
 );
 
-ALTER TABLE owners
+ALTER TABLE clients
 ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE staff (
@@ -187,26 +187,26 @@ CREATE TABLE staff_roles (
     CONSTRAINT uq_staff_roles_role UNIQUE (staff_id, role_id)
 );
 
-CREATE TABLE owners_pets (
+CREATE TABLE clients_pets (
     id SERIAL,
-    owner_id INT NOT NULL,
+    client_id INT NOT NULL,
     pet_id INT NOT NULL,
     is_primary BOOLEAN NOT NULL DEFAULT false,
     start_date DATE NOT NULL,
     end_date DATE NULL,
-    CONSTRAINT pk_owners_pets PRIMARY KEY (id),
-    CONSTRAINT fk_owners_pets_owner FOREIGN KEY (owner_id) REFERENCES owners (id) ON DELETE CASCADE,
-    CONSTRAINT fk_owners_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE
+    CONSTRAINT pk_clients_pets PRIMARY KEY (id),
+    CONSTRAINT fk_clients_pets_client FOREIGN KEY (client_id) REFERENCES clients (id) ON DELETE CASCADE,
+    CONSTRAINT fk_clients_pets_pet FOREIGN KEY (pet_id) REFERENCES pets (id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX unique_primary_owner_per_pet ON owners_pets (pet_id)
+CREATE UNIQUE INDEX unique_primary_client_per_pet ON clients_pets (pet_id)
 WHERE
     is_primary = true
     AND end_date IS NULL;
 
-CREATE INDEX idx_owners_pets_owner_id ON owners_pets (owner_id);
+CREATE INDEX idx_clients_pets_client_id ON clients_pets (client_id);
 
-CREATE INDEX idx_owners_pets_pet_id ON owners_pets (pet_id);
+CREATE INDEX idx_clients_pets_pet_id ON clients_pets (pet_id);
 
 CREATE TABLE notifications_staff (
     id SERIAL,
@@ -224,7 +224,7 @@ CREATE TABLE appointments (
     id SERIAL,
     service_id INT NOT NULL,
     staff_id INT NOT NULL,
-    owner_pet_id INT NOT NULL,
+    client_pet_id INT NOT NULL,
     parent_medical_record_id INT NULL,
     appointment_status_id INT NOT NULL,
     start_time TIMESTAMPTZ NOT NULL,
@@ -235,13 +235,13 @@ CREATE TABLE appointments (
     CONSTRAINT pk_appointments PRIMARY KEY (id),
     CONSTRAINT fk_appointments_services FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE RESTRICT,
     CONSTRAINT fk_appointments_staff FOREIGN KEY (staff_id) REFERENCES staff (id) ON DELETE RESTRICT,
-    CONSTRAINT fk_appointments_owner_pet FOREIGN KEY (owner_pet_id) REFERENCES owners_pets (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_appointments_client_pet FOREIGN KEY (client_pet_id) REFERENCES clients_pets (id) ON DELETE RESTRICT,
     CONSTRAINT fk_appointments_parent_medical_record FOREIGN KEY (parent_medical_record_id) REFERENCES medical_records (id) ON DELETE SET NULL,
     CONSTRAINT fk_appointments_appointment_status FOREIGN KEY (appointment_status_id) REFERENCES appointment_status (id) ON DELETE RESTRICT,
     CONSTRAINT chk_appointments_end_time_gt_start_time CHECK (end_time > start_time)
 );
 
-CREATE INDEX idx_appointments_owner_pet_id ON appointments (owner_pet_id);
+CREATE INDEX idx_appointments_client_pet_id ON appointments (client_pet_id);
 
 CREATE INDEX idx_appointments_staff_id ON appointments (staff_id);
 
@@ -295,8 +295,8 @@ CREATE TRIGGER trigger_update_staff
     BEFORE UPDATE ON staff
     FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
-CREATE TRIGGER trigger_update_owners
-    BEFORE UPDATE ON owners
+CREATE TRIGGER trigger_update_clients
+    BEFORE UPDATE ON clients
     FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 CREATE TRIGGER trigger_update_pets
